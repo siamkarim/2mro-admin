@@ -802,7 +802,7 @@ const TraderDetailPopup = ({ open, onClose, account }: TraderDetailPopupProps) =
                           field.key === "depositFee" || field.key === "commissionFee";
                         return (
                           <div
-                            key={field.label}
+                            key={field.key}
                             className="flex items-center justify-between border-b border-slate-100 pb-2"
                           >
                             <div className="pr-3">

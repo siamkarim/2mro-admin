@@ -5,7 +5,7 @@ import { useTranslation } from "react-i18next";
 
 import { RoleGuard } from "@/context/AuthContext";
 import EditUserPopup from "@/components/popups/EditUserPopup";
-import AddTraderPopup, { type TraderPayload } from "@/components/popups/AddTraderPopup";
+import AddTraderPopup from "@/components/popups/AddTraderPopup";
 import { fetchUsers } from "@/lib/api";
 import type { AppUser } from "@/mock/data";
 import { ROUTE_MAP } from "@/lib/utils/helpers";

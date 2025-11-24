@@ -98,8 +98,6 @@ const AdministrationPage = () => {
     setEditingAdmin(null);
   };
 
-  const canAssign = admins.some((admin) => admin.role !== "SUPER_ADMIN");
-
   return (
     <RoleGuard allowedRoles={ROUTE_MAP.administration.allowedRoles}>
       <section className="space-y-4 border border-slate-200 bg-white p-4">

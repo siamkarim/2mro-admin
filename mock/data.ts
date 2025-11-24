@@ -1,5 +1,3 @@
-import type { UserRole } from "@/lib/utils/helpers";
-
 export type TradeStatus = "OPEN" | "CLOSED" | "PENDING";
 
 export interface Trade {

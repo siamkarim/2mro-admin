@@ -37,7 +37,7 @@ const AddTraderPopup = ({ open, onClose, onSubmit }: AddTraderPopupProps) => {
 
   const handleChange = (
     key: keyof TraderPayload,
-    value: string | TraderPayload["status"]
+    value: string
   ) => {
     setFormState((prev) => ({ ...prev, [key]: value }));
   };
