@@ -99,7 +99,7 @@ const Sidebar = ({
         </nav>
       </div>
       <div className="border-t border-slate-200 pt-4 text-xs text-slate-500">
-        Forex © {new Date().getFullYear()}
+        {t("ui.sidebar_footer_text")} {new Date().getFullYear()}
       </div>
     </aside>
   );

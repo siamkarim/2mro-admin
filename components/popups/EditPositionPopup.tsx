@@ -44,7 +44,7 @@ const EditPositionPopup = ({ open, onClose, position, onSave }: EditPositionPopu
     );
   }
 
-  const numericKeys = new Set<keyof EditPositionPopupProps["position"]>([
+  const numericKeys = new Set<"swap" | "commission" | "profit" | "netProfit">([
     "swap",
     "commission",
     "profit",
