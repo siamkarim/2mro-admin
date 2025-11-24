@@ -30,7 +30,7 @@ const Navbar = ({ onToggleSidebar }: NavbarProps) => {
   const handleLanguageChange = (lang: SupportedLocale) => {
     if (typeof window !== "undefined") {
       window.localStorage.setItem("preferredLanguage", lang);
-      window.location.href = window.location.href;
+      window.location.reload();
     } else {
       void i18n.changeLanguage(lang);
     }
