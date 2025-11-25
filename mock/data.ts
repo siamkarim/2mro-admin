@@ -81,6 +81,24 @@ export interface TraderAccount {
   marginCall: boolean;
 }
 
+export interface TraderAccountType {
+  user_id: number;
+  show_id: string;
+  account_id: number;
+  status: boolean;
+  name: string;
+  first_name: string;
+  account_type: string;
+  email: string;
+  phone: string;
+  balance: number;
+  equity: number;
+  margin: number;
+  free_margin: number;
+  margin_level: number;
+  credit: number;
+}
+
 export type FundingType = "bank" | "crypto";
 
 export interface PendingFunding {
@@ -482,4 +500,3 @@ export const pendingWithdrawals: PendingWithdrawal[] = [
     destination: "crypto",
   },
 ];
-

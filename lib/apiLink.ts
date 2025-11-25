@@ -1,0 +1,23 @@
+export const apiLink = {
+  USER_LOGIN: `/auth/login`,
+  REFRESH_TOKEN: `/auth/logout`,
+  USER_LOGOUT: `/auth/logout`,
+  USER_PROFILE: `/users/me`,
+  USERS: `/admin/users`,
+  USERS_VERIFICATION: `/admin/users-verification`,
+  SUMMARY: `/admin/dashboard/summary`,
+  DOCUMENT: `/admin/documents`,
+  ADMIN_TRANSACTION: `/admin/transactions`,
+  PENDING_TRANSACTION: `/admin/transactions/pending`,
+  ADMIN_ACCOUNT: `/admin/accounts`,
+  ATIVE_USER: `/admin/dashboard/active-users`,
+  MARGIN_CALL: `/admin/dashboard/margin-calls`,
+  TRADER: `/admin/dashboard/traders`,
+  PENDING_DEPOSIT: `/admin/dashboard/pending-deposits`,
+  PENDING_WITHDRAWAL: `/admin/dashboard/pending-withdrawals`,
+  PAYMENT: `/admin/payment-setup`,
+
+  DEPOSIT: "/admin/deposit-setup",
+  CYPTO_DEPOSIT: "/admin/deposit-setup/crypto-wallets",
+  NOTIFICATION: "/notifications",
+};

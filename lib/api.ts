@@ -18,12 +18,16 @@ import {
   type PendingFunding,
   type PendingWithdrawal,
 } from "@/mock/data";
+import api from "./apiClient";
+import { apiLink } from "./apiLink";
 
 const normalizeUrl = (url?: string) => {
   if (!url) return "";
   const trimmed = url.replace("mock://forex", "");
   const ensured = trimmed.startsWith("/") ? trimmed : `/${trimmed}`;
-  return ensured.endsWith("/") && ensured !== "/" ? ensured.slice(0, -1) : ensured;
+  return ensured.endsWith("/") && ensured !== "/"
+    ? ensured.slice(0, -1)
+    : ensured;
 };
 
 const mockRoutes: Record<string, unknown> = {
@@ -102,8 +106,8 @@ export const fetchPendingDeposits = async () => {
 };
 
 export const fetchPendingWithdrawals = async () => {
-  const { data } =
-    await apiClient.get<PendingWithdrawal[]>("/pending-withdrawals");
+  const { data } = await apiClient.get<PendingWithdrawal[]>(
+    "/pending-withdrawals"
+  );
   return data;
 };
-

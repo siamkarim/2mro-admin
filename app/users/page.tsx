@@ -1,4 +1,4 @@
-'use client';
+"use client";
 
 import { useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
@@ -13,7 +13,7 @@ import { ROUTE_MAP } from "@/lib/utils/helpers";
 const UsersPage = () => {
   const { t } = useTranslation();
   const [users, setUsers] = useState<AppUser[]>([]);
-  const [loading, setLoading] = useState(true);
+  const [loading, setLoading] = useState(false);
   const [segment, setSegment] = useState<"users" | "blocked">("users");
   const [isEditOpen, setIsEditOpen] = useState(false);
   const [editingUser, setEditingUser] = useState<AppUser | null>(null);
@@ -41,7 +41,9 @@ const UsersPage = () => {
     });
 
   const displayedUsers = users.filter((user) =>
-    segment === "users" ? user.status === "verified" : user.status !== "verified"
+    segment === "users"
+      ? user.status === "verified"
+      : user.status !== "verified"
   );
 
   const handleRefresh = async () => {
@@ -117,7 +119,9 @@ const UsersPage = () => {
               onClick={handleRefresh}
               disabled={isRefreshing}
             >
-              {isRefreshing ? `${t("actions.refresh")}...` : t("actions.refresh")}
+              {isRefreshing
+                ? `${t("actions.refresh")}...`
+                : t("actions.refresh")}
             </button>
             <button
               type="button"
@@ -152,7 +156,9 @@ const UsersPage = () => {
                 <th className="py-3 px-4">{t("users.columns.dob")}</th>
                 <th className="py-3 px-4">{t("users.columns.status")}</th>
                 <th className="py-3 px-4 text-right">
-                  {segment === "users" ? t("users.columns.edit") : t("users.columns.action")}
+                  {segment === "users"
+                    ? t("users.columns.edit")
+                    : t("users.columns.action")}
                 </th>
               </tr>
             </thead>
@@ -233,14 +239,14 @@ const UsersPage = () => {
             setIsEditOpen(false);
             setEditingUser(null);
           }}
-          onSubmit={(user) => {
-            if (!user) return;
-            setUsers((prev) =>
-              prev.map((entry) => (entry.userId === user.userId ? user : entry))
-            );
-            setIsEditOpen(false);
-            setEditingUser(null);
-          }}
+          // onSubmit={(user) => {
+          //   if (!user) return;
+          //   setUsers((prev) =>
+          //     prev.map((entry) => (entry.userId === user.userId ? user : entry))
+          //   );
+          //   setIsEditOpen(false);
+          //   setEditingUser(null);
+          // }}
         />
         <AddTraderPopup
           open={isAddOpen}
@@ -267,4 +273,3 @@ const UsersPage = () => {
 };
 
 export default UsersPage;
-

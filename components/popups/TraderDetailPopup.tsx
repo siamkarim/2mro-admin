@@ -1,26 +1,34 @@
-'use client';
+"use client";
 
 import { useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
 
-import BankSettingsPopup, { BankSettings } from "@/components/popups/BankSettingsPopup";
+import BankSettingsPopup, {
+  BankSettings,
+} from "@/components/popups/BankSettingsPopup";
 import CryptoFeeSettingsPopup, {
   CryptoFeeSettings,
 } from "@/components/popups/CryptoFeeSettingsPopup";
 import CryptoSettingsPopup, {
   CryptoSettings,
 } from "@/components/popups/CryptoSettingsPopup";
-import EditOrderPopup, { OrderPosition } from "@/components/popups/EditOrderPopup";
+import EditOrderPopup, {
+  OrderPosition,
+} from "@/components/popups/EditOrderPopup";
 import EditPositionPopup from "@/components/popups/EditPositionPopup";
 import PaymentWithdrawSettingsPopup from "@/components/popups/PaymentWithdrawSettingsPopup";
 import ModalBase from "@/components/popups/ModalBase";
-import type { AdjustmentLog, TraderAccount } from "@/mock/data";
+import type {
+  AdjustmentLog,
+  TraderAccount,
+  TraderAccountType,
+} from "@/mock/data";
 import { mockAdjustmentLogs } from "@/mock/data";
 
 interface TraderDetailPopupProps {
   open: boolean;
   onClose: () => void;
-  account: TraderAccount | null;
+  account: TraderAccountType | null;
 }
 
 const tabs = [
@@ -36,7 +44,7 @@ const tabLabelKeyMap: Record<(typeof tabs)[number], string> = {
   "Open Positions": "ui.tab_open_positions_label",
   "Order Positions": "ui.tab_order_positions_label",
   "Closed Positions": "ui.tab_closed_positions_label",
-  "Transactions": "ui.tab_transactions_label",
+  Transactions: "ui.tab_transactions_label",
   "Deposit Settings": "ui.tab_deposit_settings_label",
   "Account Settings": "ui.tab_account_settings_label",
 };
@@ -239,10 +247,15 @@ const mockTransactions: TransactionItem[] = [
   },
 ];
 
-const TraderDetailPopup = ({ open, onClose, account }: TraderDetailPopupProps) => {
+const TraderDetailPopup = ({
+  open,
+  onClose,
+  account,
+}: TraderDetailPopupProps) => {
   const { t } = useTranslation();
   const [positions, setPositions] = useState<Position[]>(mockOpenPositions);
-  const [orderPositions, setOrderPositions] = useState<OrderPosition[]>(mockOrderPositions);
+  const [orderPositions, setOrderPositions] =
+    useState<OrderPosition[]>(mockOrderPositions);
   const closedPositions: ClosedPosition[] = mockClosedPositions;
   const transactions = mockTransactions;
   const [bankDetails, setBankDetails] = useState<BankSettings>({
@@ -268,7 +281,10 @@ const TraderDetailPopup = ({ open, onClose, account }: TraderDetailPopupProps) =
     deposit: "3",
     commission: "2",
   });
-  const [withdrawSettings, setWithdrawSettings] = useState<{ fee: string; tax: string }>({
+  const [withdrawSettings, setWithdrawSettings] = useState<{
+    fee: string;
+    tax: string;
+  }>({
     fee: "5",
     tax: "12",
   });
@@ -276,33 +292,46 @@ const TraderDetailPopup = ({ open, onClose, account }: TraderDetailPopupProps) =
   const [isWithdrawPopupOpen, setIsWithdrawPopupOpen] = useState(false);
   const [leverageRatio, setLeverageRatio] = useState("100");
   const [leverageDraft, setLeverageDraft] = useState("100");
-  const [creditAdjustments, setCreditAdjustments] = useState<Record<string, number>>({});
-  const [balanceAdjustments, setBalanceAdjustments] = useState<Record<string, number>>({});
+  const [creditAdjustments, setCreditAdjustments] = useState<
+    Record<string, number>
+  >({});
+  const [balanceAdjustments, setBalanceAdjustments] = useState<
+    Record<string, number>
+  >({});
   const [creditInput, setCreditInput] = useState("");
   const [balanceInput, setBalanceInput] = useState("");
   const [isBankPopupOpen, setIsBankPopupOpen] = useState(false);
   const [isCryptoFeePopupOpen, setIsCryptoFeePopupOpen] = useState(false);
-  const [editingCrypto, setEditingCrypto] = useState<CryptoSettings | null>(null);
+  const [editingCrypto, setEditingCrypto] = useState<CryptoSettings | null>(
+    null
+  );
   const [pendingAdjustment, setPendingAdjustment] = useState<{
     target: "credit" | "balance";
     mode: "add" | "remove";
     amount: number;
   } | null>(null);
-  const [manualAdjustmentLogs, setManualAdjustmentLogs] = useState<Record<string, AdjustmentLog[]>>({});
-  const [selectedPosition, setSelectedPosition] = useState<Position | null>(null);
-  const [selectedOrder, setSelectedOrder] = useState<OrderPosition | null>(null);
+  const [manualAdjustmentLogs, setManualAdjustmentLogs] = useState<
+    Record<string, AdjustmentLog[]>
+  >({});
+  const [selectedPosition, setSelectedPosition] = useState<Position | null>(
+    null
+  );
+  const [selectedOrder, setSelectedOrder] = useState<OrderPosition | null>(
+    null
+  );
   const [isEditPositionOpen, setIsEditPositionOpen] = useState(false);
   const [isEditOrderOpen, setIsEditOrderOpen] = useState(false);
-  const [activeTab, setActiveTab] = useState<(typeof tabs)[number]>("Open Positions");
+  const [activeTab, setActiveTab] =
+    useState<(typeof tabs)[number]>("Open Positions");
 
   const baseAdjustmentLogs = useMemo(() => {
     if (!account) return [];
-    return mockAdjustmentLogs.filter((log) => log.userId === account.userId);
+    return mockAdjustmentLogs.filter((log) => log.user_id === account.user_id);
   }, [account]);
 
   const adjustmentLogs = useMemo(() => {
     if (!account) return [];
-    const manual = manualAdjustmentLogs[account.userId] ?? [];
+    const manual = manualAdjustmentLogs[account.user_id] ?? [];
     return [...manual, ...baseAdjustmentLogs];
   }, [manualAdjustmentLogs, baseAdjustmentLogs, account]);
 
@@ -315,9 +344,11 @@ const TraderDetailPopup = ({ open, onClose, account }: TraderDetailPopupProps) =
   const isDepositSettingsTab = activeTab === "Deposit Settings";
   const isAccountSettingsTab = activeTab === "Account Settings";
   const canEdit =
-    (isOpenTab && Boolean(selectedPosition)) || (isOrderTab && Boolean(selectedOrder));
+    (isOpenTab && Boolean(selectedPosition)) ||
+    (isOrderTab && Boolean(selectedOrder));
   const canClose =
-    (isOpenTab && Boolean(selectedPosition)) || (isOrderTab && Boolean(selectedOrder));
+    (isOpenTab && Boolean(selectedPosition)) ||
+    (isOrderTab && Boolean(selectedOrder));
   const editLabel = isOrderTab
     ? t("ui.edit_order_modal_title")
     : t("ui.edit_position_modal_title");
@@ -354,15 +385,16 @@ const TraderDetailPopup = ({ open, onClose, account }: TraderDetailPopupProps) =
     setIsWithdrawPopupOpen(false);
   };
 
-  const bankDetailFields: Array<{ labelKey: string; key: keyof BankSettings }> = [
-    { labelKey: "ui.bank_name_label", key: "bankName" },
-    { labelKey: "ui.bank_account_name_label", key: "accountName" },
-    { labelKey: "ui.bank_account_number_label", key: "accountNumber" },
-    { labelKey: "ui.bank_swift_label", key: "swift" },
-    { labelKey: "funding.iban", key: "iban" },
-    { labelKey: "ui.bank_deposit_fee_label", key: "depositFee" },
-    { labelKey: "ui.bank_commission_fee_label", key: "commissionFee" },
-  ];
+  const bankDetailFields: Array<{ labelKey: string; key: keyof BankSettings }> =
+    [
+      { labelKey: "ui.bank_name_label", key: "bankName" },
+      { labelKey: "ui.bank_account_name_label", key: "accountName" },
+      { labelKey: "ui.bank_account_number_label", key: "accountNumber" },
+      { labelKey: "ui.bank_swift_label", key: "swift" },
+      { labelKey: "funding.iban", key: "iban" },
+      { labelKey: "ui.bank_deposit_fee_label", key: "depositFee" },
+      { labelKey: "ui.bank_commission_fee_label", key: "commissionFee" },
+    ];
 
   const handleBankSettingsSubmit = (payload: {
     details: BankSettings;
@@ -378,10 +410,15 @@ const TraderDetailPopup = ({ open, onClose, account }: TraderDetailPopupProps) =
   };
 
   const accountId = account.userId;
-  const currentCredit = (account.credit ?? 0) + (creditAdjustments[accountId] ?? 0);
-  const currentBalance = (account.balance ?? 0) + (balanceAdjustments[accountId] ?? 0);
+  const currentCredit =
+    (account.credit ?? 0) + (creditAdjustments[accountId] ?? 0);
+  const currentBalance =
+    (account.balance ?? 0) + (balanceAdjustments[accountId] ?? 0);
 
-  const requestAdjustment = (target: "credit" | "balance", mode: "add" | "remove") => {
+  const requestAdjustment = (
+    target: "credit" | "balance",
+    mode: "add" | "remove"
+  ) => {
     const value = target === "credit" ? creditInput : balanceInput;
     const amount = Number(value);
     if (!amount) return;
@@ -437,18 +474,36 @@ const TraderDetailPopup = ({ open, onClose, account }: TraderDetailPopupProps) =
 
   const summary = [
     { label: t("traders.columns.userId"), value: account.userId },
-    { label: t("traders.columns.name"), value: `${account.name} ${account.surname}` },
-    { label: t("traders.columns.balance"), value: `$${account.balance.toLocaleString()}` },
-    { label: t("traders.columns.credit"), value: account.credit.toLocaleString() },
+    {
+      label: t("traders.columns.name"),
+      value: `${account.name} ${account.surname}`,
+    },
+    {
+      label: t("traders.columns.balance"),
+      value: `$${account.balance.toLocaleString()}`,
+    },
+    {
+      label: t("traders.columns.credit"),
+      value: account.credit.toLocaleString(),
+    },
     {
       label: t("ui.label_profit"),
       value: `$${(account.equity - account.balance).toLocaleString(undefined, {
         maximumFractionDigits: 2,
       })}`,
     },
-    { label: t("dashboard.cards.equity"), value: `$${account.equity.toLocaleString()}` },
-    { label: t("traders.columns.margin"), value: `$${account.margin.toLocaleString()}` },
-    { label: t("traders.columns.freeMargin"), value: `$${account.freeMargin.toLocaleString()}` },
+    {
+      label: t("dashboard.cards.equity"),
+      value: `$${account.equity.toLocaleString()}`,
+    },
+    {
+      label: t("traders.columns.margin"),
+      value: `$${account.margin.toLocaleString()}`,
+    },
+    {
+      label: t("traders.columns.freeMargin"),
+      value: `$${account.freeMargin.toLocaleString()}`,
+    },
   ];
 
   return (
@@ -475,7 +530,9 @@ const TraderDetailPopup = ({ open, onClose, account }: TraderDetailPopupProps) =
               <p className="text-[9px] font-semibold uppercase tracking-[0.2em] text-slate-400">
                 {item.label}
               </p>
-              <p className="mt-0.5 text-[11px] font-semibold text-slate-900">{item.value}</p>
+              <p className="mt-0.5 text-[11px] font-semibold text-slate-900">
+                {item.value}
+              </p>
             </div>
           ))}
         </div>
@@ -569,10 +626,17 @@ const TraderDetailPopup = ({ open, onClose, account }: TraderDetailPopupProps) =
                   {positions.map((row) => {
                     const isSelected = selectedPosition?.id === row.id;
                     const directionColor =
-                      row.direction === "Buy" ? "text-emerald-600" : "text-red-500";
-                    const profitColor = Number(row.profit) >= 0 ? "text-emerald-600" : "text-red-500";
+                      row.direction === "Buy"
+                        ? "text-emerald-600"
+                        : "text-red-500";
+                    const profitColor =
+                      Number(row.profit) >= 0
+                        ? "text-emerald-600"
+                        : "text-red-500";
                     const netProfitColor =
-                      Number(row.netProfit) >= 0 ? "text-emerald-600" : "text-red-500";
+                      Number(row.netProfit) >= 0
+                        ? "text-emerald-600"
+                        : "text-red-500";
                     return (
                       <tr
                         key={row.id}
@@ -589,15 +653,23 @@ const TraderDetailPopup = ({ open, onClose, account }: TraderDetailPopupProps) =
                         <td className="py-3 px-3">{row.symbol}</td>
                         <td className="py-3 px-3">{row.createdAt}</td>
                         <td className="py-3 px-3">{row.volume}</td>
-                        <td className={`py-3 px-3 font-semibold ${directionColor}`}>
-                          {t(row.direction === "Buy" ? "ui.option_buy_label" : "ui.option_sell_label")}
+                        <td
+                          className={`py-3 px-3 font-semibold ${directionColor}`}
+                        >
+                          {t(
+                            row.direction === "Buy"
+                              ? "ui.option_buy_label"
+                              : "ui.option_sell_label"
+                          )}
                         </td>
                         <td className="py-3 px-3">{row.enterPrice}</td>
                         <td className="py-3 px-3">{row.price}</td>
                         <td className="py-3 px-3">{row.stopLoss}</td>
                         <td className="py-3 px-3">{row.takeProfit}</td>
                         <td className="py-3 px-3">
-                          {row.swap >= 0 ? `$${row.swap}` : `-$${Math.abs(row.swap)}`}
+                          {row.swap >= 0
+                            ? `$${row.swap}`
+                            : `-$${Math.abs(row.swap)}`}
                         </td>
                         <td className="py-3 px-3">
                           {row.commission >= 0
@@ -629,7 +701,9 @@ const TraderDetailPopup = ({ open, onClose, account }: TraderDetailPopupProps) =
                 <tbody className="text-slate-700">
                   {orderPositions.map((row) => {
                     const directionColor =
-                      row.direction === "Buy" ? "text-emerald-600" : "text-red-500";
+                      row.direction === "Buy"
+                        ? "text-emerald-600"
+                        : "text-red-500";
                     const isSelected = selectedOrder?.id === row.id;
                     return (
                       <tr
@@ -650,8 +724,14 @@ const TraderDetailPopup = ({ open, onClose, account }: TraderDetailPopupProps) =
                         <td className="py-3 px-3">{row.symbol}</td>
                         <td className="py-3 px-3">{row.createdAt}</td>
                         <td className="py-3 px-3">{row.volume}</td>
-                        <td className={`py-3 px-3 font-semibold ${directionColor}`}>
-                          {t(row.direction === "Buy" ? "ui.option_buy_label" : "ui.option_sell_label")}
+                        <td
+                          className={`py-3 px-3 font-semibold ${directionColor}`}
+                        >
+                          {t(
+                            row.direction === "Buy"
+                              ? "ui.option_buy_label"
+                              : "ui.option_sell_label"
+                          )}
                         </td>
                         <td className="py-3 px-3">{row.orderPrice}</td>
                         <td className="py-3 px-3">{row.currentPrice}</td>
@@ -676,26 +756,43 @@ const TraderDetailPopup = ({ open, onClose, account }: TraderDetailPopupProps) =
                 <tbody className="text-slate-700">
                   {closedPositions.map((row) => {
                     const directionColor =
-                      row.direction === "Buy" ? "text-emerald-600" : "text-red-500";
-                    const profitColor = Number(row.profit) >= 0 ? "text-emerald-600" : "text-red-500";
+                      row.direction === "Buy"
+                        ? "text-emerald-600"
+                        : "text-red-500";
+                    const profitColor =
+                      Number(row.profit) >= 0
+                        ? "text-emerald-600"
+                        : "text-red-500";
                     const netProfitColor =
-                      Number(row.netProfit) >= 0 ? "text-emerald-600" : "text-red-500";
+                      Number(row.netProfit) >= 0
+                        ? "text-emerald-600"
+                        : "text-red-500";
                     return (
                       <tr key={row.id} className="border-t border-slate-200">
-                        <td className="py-3 px-3 font-semibold text-slate-900">{row.orderNo}</td>
+                        <td className="py-3 px-3 font-semibold text-slate-900">
+                          {row.orderNo}
+                        </td>
                         <td className="py-3 px-3">{row.symbol}</td>
                         <td className="py-3 px-3">{row.createdAt}</td>
                         <td className="py-3 px-3">{row.closeTime}</td>
                         <td className="py-3 px-3">{row.volume}</td>
-                        <td className={`py-3 px-3 font-semibold ${directionColor}`}>
-                          {t(row.direction === "Buy" ? "ui.option_buy_label" : "ui.option_sell_label")}
+                        <td
+                          className={`py-3 px-3 font-semibold ${directionColor}`}
+                        >
+                          {t(
+                            row.direction === "Buy"
+                              ? "ui.option_buy_label"
+                              : "ui.option_sell_label"
+                          )}
                         </td>
                         <td className="py-3 px-3">{row.enterPrice}</td>
                         <td className="py-3 px-3">{row.closePrice}</td>
                         <td className="py-3 px-3">{row.stopLoss}</td>
                         <td className="py-3 px-3">{row.takeProfit}</td>
                         <td className="py-3 px-3">
-                          {row.swap >= 0 ? `$${row.swap}` : `-$${Math.abs(row.swap)}`}
+                          {row.swap >= 0
+                            ? `$${row.swap}`
+                            : `-$${Math.abs(row.swap)}`}
                         </td>
                         <td className="py-3 px-3">
                           {row.commission >= 0
@@ -727,18 +824,27 @@ const TraderDetailPopup = ({ open, onClose, account }: TraderDetailPopupProps) =
                 <tbody className="text-slate-700">
                   {transactions.map((entry) => {
                     const typeLabel =
-                      entry.type === "bank" ? t("filters.bank") : t("filters.crypto");
+                      entry.type === "bank"
+                        ? t("filters.bank")
+                        : t("filters.crypto");
                     const directionLabel =
                       entry.direction === "withdrawal"
                         ? t("ui.table_withdrawal_label")
                         : t("ui.table_deposit_label");
                     const directionColor =
-                      entry.direction === "withdrawal" ? "text-red-500" : "text-blue-600";
+                      entry.direction === "withdrawal"
+                        ? "text-red-500"
+                        : "text-blue-600";
                     const statusColor =
-                      entry.status === "approved" ? "text-emerald-600" : "text-red-500";
-                    const amountPrefix = entry.direction === "withdrawal" ? "-$" : "+$";
+                      entry.status === "approved"
+                        ? "text-emerald-600"
+                        : "text-red-500";
+                    const amountPrefix =
+                      entry.direction === "withdrawal" ? "-$" : "+$";
                     const amountColor =
-                      entry.direction === "withdrawal" ? "text-red-500" : "text-emerald-600";
+                      entry.direction === "withdrawal"
+                        ? "text-red-500"
+                        : "text-emerald-600";
                     const formattedAmount = `${amountPrefix}${entry.amount.toLocaleString()}`;
                     return (
                       <tr key={entry.id} className="border-t border-slate-200">
@@ -746,14 +852,20 @@ const TraderDetailPopup = ({ open, onClose, account }: TraderDetailPopupProps) =
                           {entry.id}
                         </td>
                         <td className="py-3 px-3">{typeLabel}</td>
-                        <td className={`py-3 px-3 font-semibold ${directionColor}`}>
+                        <td
+                          className={`py-3 px-3 font-semibold ${directionColor}`}
+                        >
                           {directionLabel}
                         </td>
                         <td className="py-3 px-3">{entry.time}</td>
-                        <td className={`py-3 px-3 font-semibold ${amountColor}`}>
+                        <td
+                          className={`py-3 px-3 font-semibold ${amountColor}`}
+                        >
                           {formattedAmount}
                         </td>
-                        <td className={`py-3 px-3 font-semibold ${statusColor}`}>
+                        <td
+                          className={`py-3 px-3 font-semibold ${statusColor}`}
+                        >
                           {entry.status === "approved"
                             ? t("ui.status_approved_titlecase")
                             : t("ui.status_rejected_titlecase")}
@@ -772,7 +884,9 @@ const TraderDetailPopup = ({ open, onClose, account }: TraderDetailPopupProps) =
                         <p className="text-xs font-semibold uppercase tracking-[0.2em] text-slate-600">
                           {t("ui.bank_info_title")}
                         </p>
-                        <p className="text-[10px] text-slate-500">{t("ui.bank_info_subtitle")}</p>
+                        <p className="text-[10px] text-slate-500">
+                          {t("ui.bank_info_subtitle")}
+                        </p>
                       </div>
                       <div className="flex items-center gap-2">
                         <button
@@ -784,7 +898,9 @@ const TraderDetailPopup = ({ open, onClose, account }: TraderDetailPopupProps) =
                           }`}
                           onClick={() => setBankActive((prev) => !prev)}
                         >
-                          {bankActive ? t("status.ACTIVE") : t("ui.status_inactive_label")}
+                          {bankActive
+                            ? t("status.ACTIVE")
+                            : t("ui.status_inactive_label")}
                         </button>
                         <button
                           type="button"
@@ -799,7 +915,8 @@ const TraderDetailPopup = ({ open, onClose, account }: TraderDetailPopupProps) =
                       {bankDetailFields.map((field) => {
                         const value = bankDetails[field.key];
                         const isCurrencyField =
-                          field.key === "depositFee" || field.key === "commissionFee";
+                          field.key === "depositFee" ||
+                          field.key === "commissionFee";
                         return (
                           <div
                             key={field.key}
@@ -831,7 +948,9 @@ const TraderDetailPopup = ({ open, onClose, account }: TraderDetailPopupProps) =
                         <p className="text-xs font-semibold uppercase tracking-[0.2em] text-slate-600">
                           {t("ui.crypto_info_title")}
                         </p>
-                        <p className="text-[10px] text-slate-500">{t("ui.crypto_info_subtitle")}</p>
+                        <p className="text-[10px] text-slate-500">
+                          {t("ui.crypto_info_subtitle")}
+                        </p>
                       </div>
                       <div className="flex items-center gap-2">
                         <button
@@ -843,7 +962,9 @@ const TraderDetailPopup = ({ open, onClose, account }: TraderDetailPopupProps) =
                           }`}
                           onClick={() => setCryptoActive((prev) => !prev)}
                         >
-                          {cryptoActive ? t("status.ACTIVE") : t("ui.status_inactive_label")}
+                          {cryptoActive
+                            ? t("status.ACTIVE")
+                            : t("ui.status_inactive_label")}
                         </button>
                         <button
                           type="button"
@@ -864,16 +985,27 @@ const TraderDetailPopup = ({ open, onClose, account }: TraderDetailPopupProps) =
                       <table className="w-full min-w-[520px] text-left text-[11px] uppercase tracking-[0.25em] text-slate-500">
                         <thead className="border-b border-slate-200 text-slate-600">
                           <tr>
-                            <th className="py-2 px-2">{t("funding.cryptoLabel")}</th>
-                            <th className="py-2 px-2">{t("funding.network")}</th>
-                            <th className="py-2 px-2">{t("ui.crypto_wallet_address_label")}</th>
-                            <th className="py-2 px-2 text-right">{t("ui.table_actions_header")}</th>
+                            <th className="py-2 px-2">
+                              {t("funding.cryptoLabel")}
+                            </th>
+                            <th className="py-2 px-2">
+                              {t("funding.network")}
+                            </th>
+                            <th className="py-2 px-2">
+                              {t("ui.crypto_wallet_address_label")}
+                            </th>
+                            <th className="py-2 px-2 text-right">
+                              {t("ui.table_actions_header")}
+                            </th>
                           </tr>
                         </thead>
                         <tbody className="text-slate-700">
                           {cryptoAccounts.map((entry) => {
                             return (
-                              <tr key={entry.id} className="border-b border-slate-100">
+                              <tr
+                                key={entry.id}
+                                className="border-b border-slate-100"
+                              >
                                 <td className="py-2 px-2">{entry.crypto}</td>
                                 <td className="py-2 px-2">{entry.network}</td>
                                 <td className="py-2 px-2">
@@ -902,7 +1034,9 @@ const TraderDetailPopup = ({ open, onClose, account }: TraderDetailPopupProps) =
                                     <button
                                       type="button"
                                       className="border border-red-500 px-3 py-1 text-[10px] font-semibold uppercase tracking-[0.3em] text-red-600 hover:bg-red-50"
-                                      onClick={() => handleRemoveCrypto(entry.id!)}
+                                      onClick={() =>
+                                        handleRemoveCrypto(entry.id!)
+                                      }
                                     >
                                       {t("ui.common_delete_button")}
                                     </button>
@@ -946,7 +1080,6 @@ const TraderDetailPopup = ({ open, onClose, account }: TraderDetailPopupProps) =
                         </div>
                       </div>
                     </div>
-
                   </section>
                 </div>
                 <div className="rounded border border-slate-200 bg-white p-3">
@@ -969,7 +1102,9 @@ const TraderDetailPopup = ({ open, onClose, account }: TraderDetailPopupProps) =
                         }`}
                         onClick={() => setWithdrawActive((prev) => !prev)}
                       >
-                        {withdrawActive ? t("status.ACTIVE") : t("ui.status_inactive_label")}
+                        {withdrawActive
+                          ? t("status.ACTIVE")
+                          : t("ui.status_inactive_label")}
                       </button>
                       <button
                         type="button"
@@ -985,13 +1120,17 @@ const TraderDetailPopup = ({ open, onClose, account }: TraderDetailPopupProps) =
                       <p className="text-[10px] font-semibold uppercase tracking-[0.3em] text-slate-500">
                         {t("ui.withdraw_fee_label")}
                       </p>
-                      <p className="text-xl font-semibold text-slate-900">${withdrawSettings.fee}</p>
+                      <p className="text-xl font-semibold text-slate-900">
+                        ${withdrawSettings.fee}
+                      </p>
                     </div>
                     <div className="rounded border border-slate-100 bg-slate-50 p-3">
                       <p className="text-[10px] font-semibold uppercase tracking-[0.3em] text-slate-500">
                         {t("ui.income_tax_label")}
                       </p>
-                      <p className="text-xl font-semibold text-slate-900">{withdrawSettings.tax}%</p>
+                      <p className="text-xl font-semibold text-slate-900">
+                        {withdrawSettings.tax}%
+                      </p>
                     </div>
                   </div>
                 </div>
@@ -1006,7 +1145,9 @@ const TraderDetailPopup = ({ open, onClose, account }: TraderDetailPopupProps) =
                       </p>
                       <p className="text-[10px] text-slate-500">
                         {t("ui.current_leverage_text")}&nbsp;
-                        <span className="font-semibold text-slate-900">1:{leverageRatio}</span>
+                        <span className="font-semibold text-slate-900">
+                          1:{leverageRatio}
+                        </span>
                       </p>
                     </div>
                     <div className="flex items-center gap-2">
@@ -1018,7 +1159,9 @@ const TraderDetailPopup = ({ open, onClose, account }: TraderDetailPopupProps) =
                           className="w-20 border-none bg-transparent p-0 text-sm text-slate-900 focus:outline-none"
                           value={leverageDraft}
                           onChange={(event) =>
-                            setLeverageDraft(event.target.value.replace(/[^0-9]/g, ""))
+                            setLeverageDraft(
+                              event.target.value.replace(/[^0-9]/g, "")
+                            )
                           }
                         />
                       </div>
@@ -1040,14 +1183,17 @@ const TraderDetailPopup = ({ open, onClose, account }: TraderDetailPopupProps) =
                         {t("ui.credit_tools_heading")}
                       </p>
                       <p className="mt-1 text-sm font-semibold text-slate-900">
-                        {t("ui.current_credit_text")} ${currentCredit.toLocaleString()}
+                        {t("ui.current_credit_text")} $
+                        {currentCredit.toLocaleString()}
                       </p>
                       <label className="mt-2 block text-[10px] font-semibold uppercase tracking-[0.3em] text-slate-500">
                         {t("funding.amount")}
                         <input
                           className="mt-1 w-full border border-slate-300 px-2 py-1 text-sm"
                           value={creditInput}
-                          onChange={(event) => setCreditInput(event.target.value)}
+                          onChange={(event) =>
+                            setCreditInput(event.target.value)
+                          }
                           placeholder="100"
                         />
                       </label>
@@ -1073,14 +1219,17 @@ const TraderDetailPopup = ({ open, onClose, account }: TraderDetailPopupProps) =
                         {t("ui.balance_tools_heading")}
                       </p>
                       <p className="mt-1 text-sm font-semibold text-slate-900">
-                        {t("ui.current_balance_text")} ${currentBalance.toLocaleString()}
+                        {t("ui.current_balance_text")} $
+                        {currentBalance.toLocaleString()}
                       </p>
                       <label className="mt-2 block text-[10px] font-semibold uppercase tracking-[0.3em] text-slate-500">
                         {t("funding.amount")}
                         <input
                           className="mt-1 w-full border border-slate-300 px-2 py-1 text-sm"
                           value={balanceInput}
-                          onChange={(event) => setBalanceInput(event.target.value)}
+                          onChange={(event) =>
+                            setBalanceInput(event.target.value)
+                          }
                           placeholder="100"
                         />
                       </label>
@@ -1112,17 +1261,30 @@ const TraderDetailPopup = ({ open, onClose, account }: TraderDetailPopupProps) =
                         <table className="w-full text-left text-[10px] uppercase tracking-[0.3em] text-slate-500">
                           <thead className="bg-slate-50 text-slate-600">
                             <tr>
-                              <th className="py-2 px-2">{t("reports.columns.timestamp")}</th>
+                              <th className="py-2 px-2">
+                                {t("reports.columns.timestamp")}
+                              </th>
                               <th className="py-2 px-2">{t("funding.type")}</th>
-                              <th className="py-2 px-2">{t("funding.actionColumn")}</th>
-                              <th className="py-2 px-2">{t("funding.amount")}</th>
-                              <th className="py-2 px-2">{t("ui.credit_after_header")}</th>
-                              <th className="py-2 px-2">{t("ui.balance_after_header")}</th>
+                              <th className="py-2 px-2">
+                                {t("funding.actionColumn")}
+                              </th>
+                              <th className="py-2 px-2">
+                                {t("funding.amount")}
+                              </th>
+                              <th className="py-2 px-2">
+                                {t("ui.credit_after_header")}
+                              </th>
+                              <th className="py-2 px-2">
+                                {t("ui.balance_after_header")}
+                              </th>
                             </tr>
                           </thead>
                           <tbody className="text-slate-700">
                             {adjustmentLogs.map((log) => (
-                              <tr key={log.id} className="border-t border-slate-100 text-[11px] normal-case">
+                              <tr
+                                key={log.id}
+                                className="border-t border-slate-100 text-[11px] normal-case"
+                              >
                                 <td className="py-2 px-2 text-[10px] uppercase tracking-[0.2em] text-slate-500">
                                   {log.createdAt}
                                 </td>
@@ -1133,7 +1295,9 @@ const TraderDetailPopup = ({ open, onClose, account }: TraderDetailPopupProps) =
                                 </td>
                                 <td
                                   className={`py-2 px-2 font-semibold ${
-                                    log.mode === "add" ? "text-emerald-600" : "text-red-600"
+                                    log.mode === "add"
+                                      ? "text-emerald-600"
+                                      : "text-red-600"
                                   }`}
                                 >
                                   {log.mode === "add"
@@ -1142,13 +1306,21 @@ const TraderDetailPopup = ({ open, onClose, account }: TraderDetailPopupProps) =
                                 </td>
                                 <td
                                   className={`py-2 px-2 font-semibold ${
-                                    log.mode === "add" ? "text-emerald-600" : "text-red-600"
+                                    log.mode === "add"
+                                      ? "text-emerald-600"
+                                      : "text-red-600"
                                   }`}
                                 >
-                                  {`${log.mode === "add" ? "+" : "-"}$${log.amount.toLocaleString()}`}
+                                  {`${
+                                    log.mode === "add" ? "+" : "-"
+                                  }$${log.amount.toLocaleString()}`}
                                 </td>
-                                <td className="py-2 px-2">${log.creditAfter.toLocaleString()}</td>
-                                <td className="py-2 px-2">${log.balanceAfter.toLocaleString()}</td>
+                                <td className="py-2 px-2">
+                                  ${log.creditAfter.toLocaleString()}
+                                </td>
+                                <td className="py-2 px-2">
+                                  ${log.balanceAfter.toLocaleString()}
+                                </td>
                               </tr>
                             ))}
                           </tbody>
@@ -1157,7 +1329,6 @@ const TraderDetailPopup = ({ open, onClose, account }: TraderDetailPopupProps) =
                     </div>
                   ) : null}
                 </section>
-
               </div>
             ) : (
               <div className="flex h-full items-center justify-center text-sm text-slate-500">
@@ -1174,7 +1345,9 @@ const TraderDetailPopup = ({ open, onClose, account }: TraderDetailPopupProps) =
           onSave={(updated) => {
             if (!updated) return;
             setPositions((prev) =>
-              prev.map((pos) => (pos.id === updated.id ? { ...pos, ...updated } : pos))
+              prev.map((pos) =>
+                pos.id === updated.id ? { ...pos, ...updated } : pos
+              )
             );
             setSelectedPosition(updated);
             setIsEditPositionOpen(false);
@@ -1258,11 +1431,14 @@ const TraderDetailPopup = ({ open, onClose, account }: TraderDetailPopupProps) =
                         {t("ui.user_id_prefix_label")} {account.userId}
                       </p>
                       <p>
-                        {t("ui.name_prefix_label")} {account.name} {account.surname}
+                        {t("ui.name_prefix_label")} {account.name}{" "}
+                        {account.surname}
                       </p>
                       <p>
-                        {t("ui.new_credit_prefix_label")} ${projectedCredit.toLocaleString()} ·{" "}
-                        {t("ui.new_balance_prefix_label")} ${projectedBalance.toLocaleString()}
+                        {t("ui.new_credit_prefix_label")} $
+                        {projectedCredit.toLocaleString()} ·{" "}
+                        {t("ui.new_balance_prefix_label")} $
+                        {projectedBalance.toLocaleString()}
                       </p>
                     </div>
                     <div className="flex justify-end gap-2">
@@ -1293,4 +1469,3 @@ const TraderDetailPopup = ({ open, onClose, account }: TraderDetailPopupProps) =
 };
 
 export default TraderDetailPopup;
-

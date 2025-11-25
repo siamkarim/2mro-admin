@@ -1,4 +1,4 @@
-'use client';
+"use client";
 
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
@@ -14,6 +14,7 @@ import type {
   PendingFunding,
   PendingWithdrawal,
   TraderAccount,
+  TraderAccountType,
   TraderStats,
 } from "@/mock/data";
 import { formatMarginLevel, ROUTE_MAP } from "@/lib/utils/helpers";
@@ -22,6 +23,7 @@ import OnlineUsersPopup from "@/components/popups/OnlineUsersPopup";
 import PendingDepositPopup from "@/components/popups/PendingDepositPopup";
 import PendingWithdrawalPopup from "@/components/popups/PendingWithdrawalPopup";
 import TraderDetailPopup from "@/components/popups/TraderDetailPopup";
+import { fetchOverviewData, fetchTradersInfo } from "@/lib/api/dashboard";
 
 type StatKey =
   | "totalUsers"
@@ -43,10 +45,15 @@ const DashboardPage = () => {
   const { t } = useTranslation();
   const [loading, setLoading] = useState(true);
   const [accounts, setAccounts] = useState<TraderAccount[]>([]);
+  const [traders, setTraders] = useState<TraderAccountType[]>([]);
   const [accountFilter, setAccountFilter] = useState<"live" | "demo">("live");
+  const [total, setTotal] = useState(0);
+  const [page, setPage] = useState(1);
   const [stats, setStats] = useState<TraderStats | null>(null);
   const [pendingDeposits, setPendingDeposits] = useState<PendingFunding[]>([]);
-  const [pendingWithdrawals, setPendingWithdrawals] = useState<PendingWithdrawal[]>([]);
+  const [pendingWithdrawals, setPendingWithdrawals] = useState<
+    PendingWithdrawal[]
+  >([]);
 
   const [isStatsMenuOpen, setIsStatsMenuOpen] = useState(false);
   const [isOnlinePopupOpen, setIsOnlinePopupOpen] = useState(false);
@@ -54,18 +61,38 @@ const DashboardPage = () => {
   const [isPendingDepositOpen, setIsPendingDepositOpen] = useState(false);
   const [isPendingWithdrawalOpen, setIsPendingWithdrawalOpen] = useState(false);
   const [isTraderPopupOpen, setIsTraderPopupOpen] = useState(false);
-  const [selectedTrader, setSelectedTrader] = useState<TraderAccount | null>(null);
-  const [generatedAt, setGeneratedAt] = useState("");
+  const [selectedTrader, setSelectedTrader] =
+    useState<TraderAccountType | null>(null);
+
+  const curentDate = new Date().toLocaleString();
+
+  const fetchTraderInformation = useCallback(async () => {
+    setLoading(true);
+    const skip = (page - 1) * 13;
+    const traderData = await fetchTradersInfo(skip, 13, accountFilter);
+    setTraders(traderData.traders);
+    setLoading(false);
+  }, [accountFilter, page]);
+
+  useEffect(() => {
+    void fetchTraderInformation();
+  }, [fetchTraderInformation]);
 
   const refreshData = useCallback(async () => {
     setLoading(true);
-    const [accountList, traderStats, depositList, withdrawalList] =
-      await Promise.all([
-        fetchTraderAccounts(),
-        fetchTraderStats(),
-        fetchPendingDeposits(),
-        fetchPendingWithdrawals(),
-      ]);
+    const [
+      accountList,
+      traderStats,
+      depositList,
+      withdrawalList,
+      dashBoardSummary,
+    ] = await Promise.all([
+      fetchTraderAccounts(),
+      fetchTraderStats(),
+      fetchPendingDeposits(),
+      fetchPendingWithdrawals(),
+      fetchOverviewData(),
+    ]);
 
     setAccounts(accountList);
     setPendingDeposits(depositList);
@@ -73,8 +100,11 @@ const DashboardPage = () => {
     setStats({
       ...traderStats,
       onlineUsers: accountList.filter((account) => account.online).length,
-      pendingDeposit: depositList.length,
-      pendingWithdrawal: withdrawalList.length,
+      pendingDeposit: dashBoardSummary.pending_deposits,
+      pendingWithdrawal: dashBoardSummary.total_withdrawals,
+      totalUsers: dashBoardSummary.total_users,
+      totalDeposit: dashBoardSummary.total_deposits,
+      totalWithdrawal: dashBoardSummary.total_withdrawals,
     });
     setLoading(false);
   }, []);
@@ -85,28 +115,6 @@ const DashboardPage = () => {
     });
     return () => cancelAnimationFrame(frame);
   }, [refreshData]);
-
-  useEffect(() => {
-    const frame = requestAnimationFrame(() => {
-      setGeneratedAt(new Date().toLocaleString());
-    });
-    return () => cancelAnimationFrame(frame);
-  }, []);
-
-  const filteredAccounts = useMemo(
-    () => accounts.filter((account) => account.accountType === accountFilter),
-    [accounts, accountFilter]
-  );
-
-  const onlineAccounts = useMemo(
-    () => accounts.filter((account) => account.online),
-    [accounts]
-  );
-
-  const marginAccounts = useMemo(
-    () => accounts.filter((account) => account.marginCall),
-    [accounts]
-  );
 
   const statItems: StatItem[] = stats
     ? [
@@ -213,7 +221,11 @@ const DashboardPage = () => {
                     }}
                   >
                     <p className={`${titleBase} ${titleColor}`}>{item.label}</p>
-                    <p className={`text-2xl font-semibold ${item.accent ?? "text-slate-900"}`}>
+                    <p
+                      className={`text-2xl font-semibold ${
+                        item.accent ?? "text-slate-900"
+                      }`}
+                    >
                       {item.value}
                     </p>
                   </div>
@@ -294,9 +306,7 @@ const DashboardPage = () => {
               <p className="text-sm font-semibold text-slate-900">
                 {t("traders.title")}
               </p>
-              <p className="text-xs text-slate-500">
-                Forex · {generatedAt || "—"}
-              </p>
+              <p className="text-xs text-slate-500">Forex · {curentDate}</p>
             </div>
             <div className="flex flex-wrap items-center gap-3">
               <div className="flex border border-slate-300">
@@ -338,17 +348,25 @@ const DashboardPage = () => {
                   <th className="py-2 px-3">{t("traders.columns.status")}</th>
                   <th className="py-2 px-3">{t("traders.columns.name")}</th>
                   <th className="py-2 px-3">{t("traders.columns.surname")}</th>
-                  <th className="py-2 px-3">{t("traders.columns.accountType")}</th>
+                  <th className="py-2 px-3">
+                    {t("traders.columns.accountType")}
+                  </th>
                   <th className="py-2 px-3">{t("traders.columns.credit")}</th>
                   <th className="py-2 px-3">{t("traders.columns.balance")}</th>
                   <th className="py-2 px-3">{t("traders.columns.equity")}</th>
-                  <th className="py-2 px-3">{t("traders.columns.freeMargin")}</th>
-                  <th className="py-2 px-3">{t("traders.columns.marginLevel")}</th>
-                  <th className="py-2 px-3 text-right">{t("traders.columns.editTrader")}</th>
+                  <th className="py-2 px-3">
+                    {t("traders.columns.freeMargin")}
+                  </th>
+                  <th className="py-2 px-3">
+                    {t("traders.columns.marginLevel")}
+                  </th>
+                  <th className="py-2 px-3 text-right">
+                    {t("traders.columns.editTrader")}
+                  </th>
                 </tr>
               </thead>
               <tbody>
-                {filteredAccounts.length === 0 ? (
+                {traders.length === 0 ? (
                   <tr>
                     <td
                       colSpan={12}
@@ -358,10 +376,13 @@ const DashboardPage = () => {
                     </td>
                   </tr>
                 ) : (
-                  filteredAccounts.map((account) => (
-                    <tr key={account.userId} className="border-b border-slate-100">
+                  traders.map((account) => (
+                    <tr
+                      key={account.account_id}
+                      className="border-b border-slate-100"
+                    >
                       <td className="py-3 px-3 font-semibold text-slate-900">
-                        {account.userId}
+                        {account.show_id}
                       </td>
                       <td className="py-3 px-3 text-slate-600">
                         <span
@@ -369,21 +390,24 @@ const DashboardPage = () => {
                           className="mr-2 inline-block h-3 w-3 bg-emerald-500"
                         />
                         {t(
-                          account.status === "live"
+                          account.account_type === "live"
                             ? "traders.live"
                             : "traders.demo"
                         )}
                       </td>
-                      <td className="py-3 px-3 text-slate-900">{account.name}</td>
                       <td className="py-3 px-3 text-slate-900">
-                        {account.surname}
+                        {account.name}
+                      </td>
+                      <td className="py-3 px-3 text-slate-900">
+                        {account.first_name}
                       </td>
                       <td className="py-3 px-3 text-slate-600">
                         {`${t(
-                          account.accountType === "live"
+                          account.account_type === "live"
                             ? "traders.live"
                             : "traders.demo"
-                        )} - ${account.currency.toUpperCase()}`}
+                        )} `}
+                        {/* - ${account.currency.toUpperCase()} */}
                       </td>
                       <td className="py-3 px-3 text-slate-900">
                         {account.credit.toLocaleString()}
@@ -395,7 +419,7 @@ const DashboardPage = () => {
                         ${account.equity.toLocaleString()}
                       </td>
                       <td className="py-3 px-3 text-slate-900">
-                        ${account.freeMargin.toLocaleString()}
+                        ${account.free_margin.toLocaleString()}
                       </td>
                       <td className="py-3 px-3 text-slate-900">
                         {formatMarginLevel(account)}
@@ -420,16 +444,16 @@ const DashboardPage = () => {
           </div>
         </section>
 
-        <OnlineUsersPopup
+        {/* <OnlineUsersPopup
           open={isOnlinePopupOpen}
           onClose={() => setIsOnlinePopupOpen(false)}
           accounts={onlineAccounts}
-        />
-        <MarginCallPopup
+        /> */}
+        {/* <MarginCallPopup
           open={isMarginPopupOpen}
           onClose={() => setIsMarginPopupOpen(false)}
           accounts={marginAccounts}
-        />
+        /> */}
         <PendingDepositPopup
           open={isPendingDepositOpen}
           onClose={() => setIsPendingDepositOpen(false)}
@@ -454,4 +478,3 @@ const DashboardPage = () => {
 };
 
 export default DashboardPage;
-
