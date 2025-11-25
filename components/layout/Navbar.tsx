@@ -8,6 +8,8 @@ import { useAuth } from "@/context/AuthContext";
 import { resources, type SupportedLocale } from "@/i18n/config";
 import BrandLogo from "./BrandLogo";
 import BellIcon from "@/components/icons/BellIcon";
+import { userLogout } from "@/lib/api/users";
+import { useRouter } from "next/navigation";
 
 interface NavbarProps {
   onToggleSidebar?: () => void;
@@ -15,6 +17,8 @@ interface NavbarProps {
 
 const Navbar = ({ onToggleSidebar }: NavbarProps) => {
   const { role } = useAuth();
+  const router = useRouter();
+
   const { i18n, t } = useTranslation();
   const [menuOpen, setMenuOpen] = useState(false);
   const [notificationOpen, setNotificationOpen] = useState(false);
@@ -33,6 +37,14 @@ const Navbar = ({ onToggleSidebar }: NavbarProps) => {
       window.location.reload();
     } else {
       void i18n.changeLanguage(lang);
+    }
+  };
+
+  const handleLogout = async () => {
+    const res = await userLogout();
+    if (res) {
+      router.push(`/`);
+    } else {
     }
   };
 
@@ -109,12 +121,13 @@ const Navbar = ({ onToggleSidebar }: NavbarProps) => {
                   ))}
                 </div>
               </div>
-              <Link
-                href="#"
+
+              <button
                 className="block px-4 py-3 text-xs font-semibold uppercase tracking-[0.2em] text-red-600"
+                onClick={handleLogout}
               >
                 {t("ui.navbar_logout_link")}
-              </Link>
+              </button>
             </div>
           ) : null}
         </div>

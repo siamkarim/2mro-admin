@@ -1,5 +1,6 @@
 import api from "../apiClient";
 import { apiLink } from "../apiLink";
+import Cookies from "js-cookie";
 
 export const fetchAppUsers = async (
   skip: number,
@@ -15,4 +16,18 @@ export const fetchAppUsers = async (
 export const fetchOnlineUsers = async (limit: number) => {
   const { data } = await api.get(apiLink.ATIVE_USER + `?limit=${limit}`);
   return data;
+};
+
+export const userLogout = async (): Promise<boolean> => {
+  try {
+    const { data } = await api.post(apiLink.USER_LOGOUT);
+
+    Cookies.remove("accessToken");
+    Cookies.remove("refreshToken");
+
+    return data;
+  } catch (error) {
+    console.error("Logout failed:", error);
+    return false;
+  }
 };
