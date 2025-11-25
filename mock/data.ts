@@ -22,6 +22,89 @@ export interface AppUser {
   hasUploadedId?: boolean;
 }
 
+export type UserVerification = {
+  id: number;
+  user_id: number;
+  show_id: string;
+  name: string;
+  first_name: string;
+  username: string;
+  nid: string;
+  email: string;
+  phone: string;
+  date_of_birth: string; // ISO 8601 format
+  id_number: string;
+  account_id: number;
+  account_number: string;
+  account_name: string;
+  account_type: string;
+  user_account_type: string;
+  user_is_verified: true;
+  currency: string;
+  password: string;
+  documents_count: number;
+  documents: object; // Could be more specific if document structure is known
+  created_at: string; // ISO 8601 format
+};
+export interface ActiveUser {
+  user_id: number;
+  user_name: string;
+  first_name: string;
+  margin_level: number;
+  last_activity: string;
+}
+
+export interface MarginCall {
+  user_id: number;
+  user_name: string;
+  margin_level: number;
+  margin: number;
+}
+
+export interface PendingDataType {
+  id: number;
+  user_id: number;
+  user_name: string;
+  email: string;
+  account_id: number;
+  transaction_id: string;
+  transaction_type: string; // assuming other possible values
+  transaction_method: string; // assuming other possible values
+  amount: number;
+  currency: string;
+  status: string; // assuming other possible values
+  bank_name: string | null;
+  account_number: string | null;
+  account_holder_name: string | null;
+  swift: string | null;
+  crypto_address: string | null;
+  crypto: string | null;
+  crypto_type: string | null;
+  wallet_address: string | null;
+  wallet_network: string | null;
+  crypto_tx_hash: string | null;
+  card_last_four: string | null;
+  admin_notes: string | null;
+  rejection_reason: string | null;
+  proof_of_payment: string | null;
+  admin_evidence: string | null;
+  approved_by: number | null;
+  approved_at: string | null;
+  user: {
+    email: string;
+    first_name: string;
+
+    account_type: string;
+  };
+  account: object; // Replace with actual Account interface if known
+  applicable_fee: number;
+  applicable_commission: number;
+  applicable_tax: number | null;
+  created_at: string;
+  updated_at: string | null;
+  completed_at: string | null;
+}
+
 export interface AdjustmentLog {
   id: string;
   userId: string;

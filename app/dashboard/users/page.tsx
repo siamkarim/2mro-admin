@@ -6,13 +6,14 @@ import { useTranslation } from "react-i18next";
 import { RoleGuard } from "@/context/AuthContext";
 import EditUserPopup from "@/components/popups/EditUserPopup";
 import AddTraderPopup from "@/components/popups/AddTraderPopup";
-import { fetchUsers } from "@/lib/api";
-import type { AppUser } from "@/mock/data";
+import type { AppUser, UserVerification } from "@/mock/data";
 import { ROUTE_MAP } from "@/lib/utils/helpers";
+import { fetchAppUsers } from "@/lib/api/users";
 
 const UsersPage = () => {
   const { t } = useTranslation();
   const [users, setUsers] = useState<AppUser[]>([]);
+  const [userList, setUserList] = useState<UserVerification[]>([]);
   const [loading, setLoading] = useState(false);
   const [segment, setSegment] = useState<"users" | "blocked">("users");
   const [isEditOpen, setIsEditOpen] = useState(false);
@@ -20,11 +21,14 @@ const UsersPage = () => {
   const [isAddOpen, setIsAddOpen] = useState(false);
   const [isRefreshing, setIsRefreshing] = useState(false);
   const [generatedAt, setGeneratedAt] = useState<string | null>(null);
+  const [total, setTotal] = useState(0);
+  const [page, setPage] = useState(1);
 
   const loadUsers = async () => {
     setLoading(true);
-    const data = await fetchUsers();
-    setUsers(data);
+    const skip = (page - 1) * 13;
+    const data = await fetchAppUsers(skip, 13, "standard");
+    setUserList(data.users);
     setLoading(false);
     setGeneratedAt(new Date().toLocaleString());
   };
@@ -81,6 +85,7 @@ const UsersPage = () => {
     link.click();
     URL.revokeObjectURL(url);
   };
+  console.log(userList);
 
   return (
     <RoleGuard allowedRoles={ROUTE_MAP.users.allowedRoles}>
@@ -163,7 +168,7 @@ const UsersPage = () => {
               </tr>
             </thead>
             <tbody>
-              {displayedUsers.length === 0 ? (
+              {userList.length === 0 ? (
                 <tr>
                   <td
                     colSpan={8}
@@ -173,36 +178,39 @@ const UsersPage = () => {
                   </td>
                 </tr>
               ) : (
-                displayedUsers.map((user) => (
-                  <tr key={user.userId} className="border-b border-slate-100">
+                userList.map((user) => (
+                  <tr key={user.user_id} className="border-b border-slate-100">
                     <td className="py-3 px-4 font-semibold uppercase tracking-[0.2em] text-slate-900">
-                      {user.userId}
+                      {user.user_id}
                     </td>
                     <td className="py-3 px-4 text-slate-900">{user.name}</td>
-                    <td className="py-3 px-4 text-slate-900">{user.surname}</td>
+                    <td className="py-3 px-4 text-slate-900">
+                      {user.first_name}
+                    </td>
                     <td className="py-3 px-4 font-mono text-slate-600">
-                      {user.nationalId}
+                      {user.nid}
                     </td>
                     <td className="py-3 px-4 text-slate-600">{user.phone}</td>
                     <td className="py-3 px-4 text-slate-600">
-                      {formatDate(user.dateOfBirth)}
+                      {formatDate(user.date_of_birth)}
                     </td>
                     <td className="py-3 px-4">
                       <span
                         className={`inline-flex items-center gap-1 border px-2 py-1 text-xs font-semibold uppercase tracking-[0.25em] ${
-                          user.status === "verified"
+                          user.user_is_verified
                             ? "border-emerald-500 text-emerald-600"
                             : "border-amber-500 text-amber-600"
                         }`}
                       >
                         <span
                           className={`h-2 w-2 rounded-full ${
-                            user.status === "verified"
+                            user.user_is_verified
                               ? "bg-emerald-500"
                               : "bg-amber-500"
                           }`}
                         />
-                        {t(`userVerification.${user.status}`)}
+                        {user.user_is_verified ? "verified" : "unverified"}
+                        {/* {t(`userVerification.${user.user_is_verified}`)} */}
                       </span>
                     </td>
                     <td className="py-3 px-4 text-right">
@@ -210,10 +218,10 @@ const UsersPage = () => {
                         <button
                           type="button"
                           className="border border-slate-300 px-3 py-1 text-[10px] font-semibold uppercase tracking-[0.3em] text-slate-600 hover:bg-slate-100"
-                          onClick={() => {
-                            setEditingUser(user);
-                            setIsEditOpen(true);
-                          }}
+                          // onClick={() => {
+                          //   setEditingUser(user);
+                          //   setIsEditOpen(true);
+                          // }}
                         >
                           {t("users.columns.edit")}
                         </button>

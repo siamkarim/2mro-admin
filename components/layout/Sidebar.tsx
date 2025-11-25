@@ -1,4 +1,4 @@
-'use client';
+"use client";
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
@@ -51,7 +51,7 @@ const Sidebar = ({
   return (
     <aside className={`${wrapperClass} ${navBaseClass}`}>
       <div className="flex flex-col gap-6">
-        <div className="border-b border-slate-200 pb-4">
+        <div className="border-b border-slate-200 pb-[7px]">
           <div
             className={`flex ${
               isMobile ? "items-center justify-between" : "justify-center"
@@ -77,7 +77,7 @@ const Sidebar = ({
         </div>
         <nav className="flex flex-col gap-2">
           {visibleLinks.map((route) => {
-            const active = pathname.startsWith(route.href);
+            const active = pathname === route.href;
             return (
               <Link
                 key={route.key}
@@ -106,4 +106,3 @@ const Sidebar = ({
 };
 
 export default Sidebar;
-

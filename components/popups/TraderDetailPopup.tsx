@@ -409,7 +409,7 @@ const TraderDetailPopup = ({
     setLeverageRatio(leverageDraft || "1");
   };
 
-  const accountId = account.userId;
+  const accountId = account.user_id;
   const currentCredit =
     (account.credit ?? 0) + (creditAdjustments[accountId] ?? 0);
   const currentBalance =

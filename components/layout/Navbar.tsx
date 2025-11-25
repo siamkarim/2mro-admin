@@ -1,4 +1,4 @@
-'use client';
+"use client";
 
 import Link from "next/link";
 import { useEffect, useState } from "react";
@@ -124,4 +124,3 @@ const Navbar = ({ onToggleSidebar }: NavbarProps) => {
 };
 
 export default Navbar;
-

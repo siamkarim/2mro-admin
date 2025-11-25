@@ -1,21 +1,32 @@
-'use client';
+"use client";
 
 import { useTranslation } from "react-i18next";
 
-import type { TraderAccount } from "@/mock/data";
-import { formatMarginLevel } from "@/lib/utils/helpers";
+import type { MarginCall, TraderAccount } from "@/mock/data";
+import { formatMarginLevel, formatMarginLevel2 } from "@/lib/utils/helpers";
 import Table from "@/components/ui/Table";
 import ModalBase from "./ModalBase";
+import { useEffect, useState } from "react";
+import { fetchMarginCall } from "@/lib/api/dashboard";
 
 interface MarginCallPopupProps {
   open: boolean;
   onClose: () => void;
-  accounts: TraderAccount[];
 }
 
-const MarginCallPopup = ({ open, onClose, accounts }: MarginCallPopupProps) => {
+const MarginCallPopup = ({ open, onClose }: MarginCallPopupProps) => {
   const { t } = useTranslation();
+  const [marginData, setMarginData] = useState<MarginCall[]>([]);
 
+  const fetchUser = async () => {
+    const data = await fetchMarginCall();
+    console.log(data);
+    setMarginData(data.accounts);
+  };
+
+  useEffect(() => {
+    fetchUser();
+  }, []);
   return (
     <ModalBase
       open={open}
@@ -30,27 +41,37 @@ const MarginCallPopup = ({ open, onClose, accounts }: MarginCallPopupProps) => {
               <tr className="border-b border-slate-200 text-xs uppercase tracking-[0.2em] text-slate-500">
                 <th className="py-2 px-2">{t("traders.columns.userId")}</th>
                 <th className="py-2 px-2">{t("traders.columns.name")}</th>
-                <th className="py-2 px-2">{t("traders.columns.surname")}</th>
-                <th className="py-2 px-2">{t("traders.columns.marginLevel")}</th>
+                {/* <th className="py-2 px-2">{t("traders.columns.surname")}</th> */}
+                <th className="py-2 px-2">
+                  {t("traders.columns.marginLevel")}
+                </th>
               </tr>
             </thead>
             <tbody>
-              {accounts.length === 0 ? (
+              {marginData.length === 0 ? (
                 <tr>
-                  <td colSpan={4} className="py-3 text-center text-sm text-slate-500">
+                  <td
+                    colSpan={4}
+                    className="py-3 text-center text-sm text-slate-500"
+                  >
                     {t("messages.empty")}
                   </td>
                 </tr>
               ) : (
-                accounts.map((account) => (
-                  <tr key={account.userId} className="border-b border-slate-50">
+                marginData.map((account) => (
+                  <tr
+                    key={account.user_id}
+                    className="border-b border-slate-50"
+                  >
                     <td className="py-3 px-2 font-semibold text-slate-900">
-                      {account.userId}
+                      {account.user_id}
                     </td>
-                    <td className="py-3 px-2 text-slate-700">{account.name}</td>
-                    <td className="py-3 px-2 text-slate-700">{account.surname}</td>
+                    <td className="py-3 px-2 text-slate-700">
+                      {account.user_name}
+                    </td>
+                    {/* <td className="py-3 px-2 text-slate-700">{account.surname}</td> */}
                     <td className="py-3 px-2 font-semibold text-red-600">
-                      {formatMarginLevel(account)}
+                      {formatMarginLevel2(account.margin_level)}
                     </td>
                   </tr>
                 ))
@@ -64,4 +85,3 @@ const MarginCallPopup = ({ open, onClose, accounts }: MarginCallPopupProps) => {
 };
 
 export default MarginCallPopup;
-

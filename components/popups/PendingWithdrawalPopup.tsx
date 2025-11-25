@@ -1,44 +1,59 @@
-'use client';
+"use client";
 
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
 
 import Button from "@/components/ui/Button";
 import ModalBase from "@/components/popups/ModalBase";
 import Table from "@/components/ui/Table";
 import { formatCurrency } from "@/lib/utils/helpers";
-import type { PendingWithdrawal } from "@/mock/data";
+import type { PendingDataType, PendingFunding } from "@/mock/data";
+import { fetchPendingDeposit } from "@/lib/api/depsoit";
 
-type WithdrawalFilter = "all" | "bank" | "crypto";
+type DepositFilter = "all" | "bank" | "crypto";
 type ActionType = "approve" | "reject";
 
-interface PendingWithdrawalPopupProps {
+interface PendingDepositPopupProps {
   open: boolean;
   onClose: () => void;
-  withdrawals: PendingWithdrawal[];
 }
 
 interface ActionState {
-  entry: PendingWithdrawal;
+  entry: PendingDataType;
   type: ActionType;
 }
 
 const PendingWithdrawalPopup = ({
   open,
   onClose,
-  withdrawals,
-}: PendingWithdrawalPopupProps) => {
+}: PendingDepositPopupProps) => {
   const { t } = useTranslation();
-  const [filter, setFilter] = useState<WithdrawalFilter>("all");
+  const [filter, setFilter] = useState("all");
   const [action, setAction] = useState<ActionState | null>(null);
 
-  const filteredWithdrawals = useMemo(() => {
-    if (filter === "all") return withdrawals;
-    return withdrawals.filter((withdrawal) => withdrawal.type === filter);
-  }, [withdrawals, filter]);
+  const [pendingUser, setPendingUser] = useState<PendingDataType[]>([]);
 
-  const isAllFilter = filter === "all";
-  const columnCount = 8;
+  const fetchUser = async () => {
+    const data = await fetchPendingDeposit("withdrawal");
+    console.log(data);
+    setPendingUser(data.transactions);
+  };
+
+  useEffect(() => {
+    fetchUser();
+  }, []);
+
+  const filteredDeposits = useMemo(() => {
+    if (filter === "all") return pendingUser;
+    return pendingUser.filter((deposit) => deposit.transaction_type === filter);
+  }, [pendingUser, filter]);
+
+  const accountColumnLabel =
+    filter === "crypto"
+      ? t("funding.address")
+      : filter === "bank"
+      ? t("funding.account")
+      : t("funding.accountAddress");
 
   const handleClose = () => {
     setFilter("all");
@@ -49,87 +64,13 @@ const PendingWithdrawalPopup = ({
     setAction(null);
   };
 
-  const handleCopy = async (value?: string) => {
-    if (!value) return;
-    try {
-      await navigator.clipboard?.writeText(value);
-    } catch {
-      // swallow clipboard errors silently
-    }
-  };
-
-  const renderCopyableValue = (value?: string) =>
-    value ? (
-      <span className="inline-flex items-center gap-2 whitespace-nowrap">
-        <span className="truncate">{value}</span>
-        <button
-          type="button"
-          className="text-[10px] uppercase tracking-[0.3em] text-slate-400 transition-colors duration-150 hover:text-slate-900 focus:outline-none focus-visible:ring-1 focus-visible:ring-slate-900"
-          onClick={() => void handleCopy(value)}
-        >
-          {t("actions.copy", { defaultValue: "Copy" })}
-        </button>
-      </span>
-    ) : (
-      <span className="text-slate-400">—</span>
-    );
-
-  const columnLabels = useMemo(() => {
-    if (isAllFilter) {
-      return {
-        entityLines: [t("funding.bankName"), t("funding.cryptoLabel")],
-        detailLines: [
-          `${t("funding.account")} / ${t("funding.iban")}`,
-          `${t("funding.network")} / ${t("funding.address")}`,
-        ],
-      };
-    }
-
-    if (filter === "bank") {
-      return {
-        entityLines: [t("funding.bankName")],
-        detailLines: [`${t("funding.account")} / ${t("funding.iban")}`],
-      };
-    }
-
-    return {
-      entityLines: [t("funding.cryptoLabel")],
-      detailLines: [`${t("funding.network")} / ${t("funding.address")}`],
-    };
-  }, [filter, isAllFilter, t]);
-
-  const renderDetailGroup = (entry: PendingWithdrawal) => {
-    if (entry.type === "bank") {
-      return (
-        <div className="space-y-1">
-          <div className="text-slate-600">{renderCopyableValue(entry.accountName)}</div>
-          <div className="text-slate-600">{renderCopyableValue(entry.iban)}</div>
-        </div>
-      );
-    }
-
-    return (
-      <div className="space-y-1">
-        <div className="text-slate-600">{renderCopyableValue(entry.network)}</div>
-        <div className="text-slate-600">
-          {renderCopyableValue(entry.address ?? entry.accountName)}
-        </div>
-      </div>
-    );
-  };
-
-  const resolveEntityValue = (entry: PendingWithdrawal) =>
-    entry.type === "bank"
-      ? entry.bankName ?? entry.accountName
-      : entry.cryptoName ?? entry.accountName;
-
   return (
     <>
       <ModalBase
         open={open}
         onClose={handleClose}
-        title={t("funding.pendingWithdrawTitle")}
-        className="max-w-5xl h-[600px]"
+        title={t("funding.pendingTitle")}
+        className="max-w-4xl h-[540px]"
       >
         <div className="flex h-full flex-col">
           <div className="flex flex-wrap items-center gap-2">
@@ -150,56 +91,47 @@ const PendingWithdrawalPopup = ({
                   <th className="py-2 px-2">{t("traders.columns.userId")}</th>
                   <th className="py-2 px-2">{t("traders.columns.name")}</th>
                   <th className="py-2 px-2">{t("traders.columns.surname")}</th>
-                  <th className="py-2 px-2">{t("funding.type")}</th>
-                  <th className="py-2 px-2 leading-tight">
-                    {columnLabels.entityLines.map((line, index) => (
-                      <span
-                        key={`${line}-${index}`}
-                        className={index === 0 ? "block" : "block pt-1"}
-                      >
-                        {line}
-                      </span>
-                    ))}
+                  <th className="py-2 px-2">
+                    {t("traders.columns.accountType")}
                   </th>
-                  <th className="py-2 px-2 leading-tight">
-                    {columnLabels.detailLines.map((line, index) => (
-                      <span
-                        key={`${line}-${index}`}
-                        className={index === 0 ? "block" : "block pt-1"}
-                      >
-                        {line}
-                      </span>
-                    ))}
-                  </th>
+                  <th className="py-2 px-2">{accountColumnLabel}</th>
                   <th className="py-2 px-2">{t("funding.amount")}</th>
                   <th className="py-2 px-2 text-right">
-                    {t("funding.actionColumn")}
+                    {t("actions.approve")}
                   </th>
                 </tr>
               </thead>
               <tbody>
-                {filteredWithdrawals.length === 0 ? (
+                {pendingUser.length === 0 ? (
                   <tr>
-                    <td colSpan={columnCount} className="py-4 text-center text-sm text-slate-500">
+                    <td
+                      colSpan={7}
+                      className="py-4 text-center text-sm text-slate-500"
+                    >
                       {t("messages.empty")}
                     </td>
                   </tr>
                 ) : (
-                  filteredWithdrawals.map((entry) => (
+                  pendingUser.map((entry) => (
                     <tr key={entry.id} className="border-b border-slate-50">
                       <td className="py-3 px-2 font-semibold text-slate-900">
-                        {entry.userId}
+                        {entry.user_id}
                       </td>
-                      <td className="py-3 px-2 text-slate-700">{entry.name}</td>
-                      <td className="py-3 px-2 text-slate-700">{entry.surname}</td>
-                      <td className="py-3 px-2 text-slate-600">
-                        {t(entry.type === "bank" ? "filters.bank" : "filters.crypto")}
+                      <td className="py-3 px-2 text-slate-700">
+                        {entry.user?.first_name}
                       </td>
-                      <td className="py-3 px-2 font-semibold text-slate-900">
-                        {resolveEntityValue(entry) ?? "—"}
+                      <td className="py-3 px-2 text-slate-700">
+                        {entry.user?.first_name}
                       </td>
                       <td className="py-3 px-2 text-slate-600">
-                        {renderDetailGroup(entry)}
+                        {t(
+                          entry.transaction_method === "bank_transfer"
+                            ? "filters.bank"
+                            : "filters.crypto"
+                        )}
+                      </td>
+                      <td className="py-3 px-2 text-slate-600">
+                        {entry.account_holder_name}
                       </td>
                       <td className="py-3 px-2 font-semibold text-slate-900">
                         {formatCurrency(entry.amount)}
@@ -208,7 +140,9 @@ const PendingWithdrawalPopup = ({
                         <div className="flex justify-end gap-2">
                           <Button
                             variant="success"
-                            onClick={() => setAction({ entry, type: "approve" })}
+                            onClick={() =>
+                              setAction({ entry, type: "approve" })
+                            }
                           >
                             {t("actions.approve")}
                           </Button>
@@ -238,17 +172,16 @@ const PendingWithdrawalPopup = ({
         {action ? (
           <div className="space-y-4 text-sm text-slate-700">
             <p>
-              {action.type === "approve"
-                ? t("funding.confirmWithdrawTextApprove", {
-                    defaultValue: "Are you sure you want to approve this withdrawal?",
-                  })
-                : t("funding.confirmWithdrawTextReject", {
-                    defaultValue: "Are you sure you want to reject this withdrawal?",
-                  })}
+              {t("funding.confirmText", {
+                action:
+                  action.type === "approve"
+                    ? t("actions.approve")
+                    : t("actions.reject"),
+              })}
             </p>
             <div className="rounded border border-slate-100 bg-slate-50 p-3">
               <p className="font-semibold text-slate-900">
-                {action.entry.name} {action.entry.surname}
+                {action.entry.user_name} {action.entry.user_name}
               </p>
               <p>{formatCurrency(action.entry.amount)}</p>
             </div>
@@ -271,4 +204,3 @@ const PendingWithdrawalPopup = ({
 };
 
 export default PendingWithdrawalPopup;
-

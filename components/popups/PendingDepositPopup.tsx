@@ -1,13 +1,14 @@
-'use client';
+"use client";
 
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
 
 import Button from "@/components/ui/Button";
 import ModalBase from "@/components/popups/ModalBase";
 import Table from "@/components/ui/Table";
 import { formatCurrency } from "@/lib/utils/helpers";
-import type { PendingFunding } from "@/mock/data";
+import type { PendingDataType, PendingFunding } from "@/mock/data";
+import { fetchPendingDeposit } from "@/lib/api/depsoit";
 
 type DepositFilter = "all" | "bank" | "crypto";
 type ActionType = "approve" | "reject";
@@ -19,26 +20,42 @@ interface PendingDepositPopupProps {
 }
 
 interface ActionState {
-  entry: PendingFunding;
+  entry: PendingDataType;
   type: ActionType;
 }
 
-const PendingDepositPopup = ({ open, onClose, deposits }: PendingDepositPopupProps) => {
+const PendingDepositPopup = ({
+  open,
+  onClose,
+  deposits,
+}: PendingDepositPopupProps) => {
   const { t } = useTranslation();
-  const [filter, setFilter] = useState<DepositFilter>("all");
+  const [filter, setFilter] = useState("all");
   const [action, setAction] = useState<ActionState | null>(null);
 
+  const [pendingUser, setPendingUser] = useState<PendingDataType[]>([]);
+
+  const fetchUser = async () => {
+    const data = await fetchPendingDeposit("deposit");
+    console.log(data);
+    setPendingUser(data.transactions);
+  };
+
+  useEffect(() => {
+    fetchUser();
+  }, []);
+
   const filteredDeposits = useMemo(() => {
-    if (filter === "all") return deposits;
-    return deposits.filter((deposit) => deposit.type === filter);
-  }, [deposits, filter]);
+    if (filter === "all") return pendingUser;
+    return pendingUser.filter((deposit) => deposit.transaction_method === filter);
+  }, [pendingUser, filter]);
 
   const accountColumnLabel =
     filter === "crypto"
       ? t("funding.address")
       : filter === "bank"
-        ? t("funding.account")
-        : t("funding.accountAddress");
+      ? t("funding.account")
+      : t("funding.accountAddress");
 
   const handleClose = () => {
     setFilter("all");
@@ -76,16 +93,23 @@ const PendingDepositPopup = ({ open, onClose, deposits }: PendingDepositPopupPro
                   <th className="py-2 px-2">{t("traders.columns.userId")}</th>
                   <th className="py-2 px-2">{t("traders.columns.name")}</th>
                   <th className="py-2 px-2">{t("traders.columns.surname")}</th>
-                  <th className="py-2 px-2">{t("traders.columns.accountType")}</th>
+                  <th className="py-2 px-2">
+                    {t("traders.columns.accountType")}
+                  </th>
                   <th className="py-2 px-2">{accountColumnLabel}</th>
                   <th className="py-2 px-2">{t("funding.amount")}</th>
-                  <th className="py-2 px-2 text-right">{t("actions.approve")}</th>
+                  <th className="py-2 px-2 text-right">
+                    {t("actions.approve")}
+                  </th>
                 </tr>
               </thead>
               <tbody>
                 {filteredDeposits.length === 0 ? (
                   <tr>
-                    <td colSpan={7} className="py-4 text-center text-sm text-slate-500">
+                    <td
+                      colSpan={7}
+                      className="py-4 text-center text-sm text-slate-500"
+                    >
                       {t("messages.empty")}
                     </td>
                   </tr>
@@ -93,14 +117,24 @@ const PendingDepositPopup = ({ open, onClose, deposits }: PendingDepositPopupPro
                   filteredDeposits.map((entry) => (
                     <tr key={entry.id} className="border-b border-slate-50">
                       <td className="py-3 px-2 font-semibold text-slate-900">
-                        {entry.userId}
+                        {entry.user_id}
                       </td>
-                      <td className="py-3 px-2 text-slate-700">{entry.name}</td>
-                      <td className="py-3 px-2 text-slate-700">{entry.surname}</td>
+                      <td className="py-3 px-2 text-slate-700">
+                        {entry.user?.first_name}
+                      </td>
+                      <td className="py-3 px-2 text-slate-700">
+                        {entry.user?.first_name}
+                      </td>
                       <td className="py-3 px-2 text-slate-600">
-                        {t(entry.type === "bank" ? "filters.bank" : "filters.crypto")}
+                        {t(
+                          entry.transaction_method === "bank"
+                            ? "filters.bank"
+                            : "filters.crypto"
+                        )}
                       </td>
-                      <td className="py-3 px-2 text-slate-600">{entry.accountName}</td>
+                      <td className="py-3 px-2 text-slate-600">
+                        {entry.account_holder_name}
+                      </td>
                       <td className="py-3 px-2 font-semibold text-slate-900">
                         {formatCurrency(entry.amount)}
                       </td>
@@ -108,7 +142,9 @@ const PendingDepositPopup = ({ open, onClose, deposits }: PendingDepositPopupPro
                         <div className="flex justify-end gap-2">
                           <Button
                             variant="success"
-                            onClick={() => setAction({ entry, type: "approve" })}
+                            onClick={() =>
+                              setAction({ entry, type: "approve" })
+                            }
                           >
                             {t("actions.approve")}
                           </Button>
@@ -147,7 +183,7 @@ const PendingDepositPopup = ({ open, onClose, deposits }: PendingDepositPopupPro
             </p>
             <div className="rounded border border-slate-100 bg-slate-50 p-3">
               <p className="font-semibold text-slate-900">
-                {action.entry.name} {action.entry.surname}
+                {action.entry.user_name} {action.entry.user_name}
               </p>
               <p>{formatCurrency(action.entry.amount)}</p>
             </div>
@@ -170,4 +206,3 @@ const PendingDepositPopup = ({ open, onClose, deposits }: PendingDepositPopupPro
 };
 
 export default PendingDepositPopup;
-

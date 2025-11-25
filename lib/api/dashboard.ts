@@ -120,9 +120,20 @@ export const fetchOverviewData = async () => {
 };
 
 // New Traders Info
-export const fetchTradersInfo = async (skip: number,
+export const fetchTradersInfo = async (
+  skip: number,
   limit: number,
-  selectedType: string) => {
-  const { data } = await api.get(`${apiLink.TRADER}?skip=${skip}&limit=${limit}&account_type=${selectedType}`);
+  selectedType: string
+) => {
+  const { data } = await api.get(
+    `${apiLink.TRADER}?skip=${skip}&limit=${limit}&account_type=${selectedType}`
+  );
+  return data;
+};
+
+export const fetchMarginCall = async () => {
+  const { data } = await api.get(
+    `${apiLink.MARGIN_CALL}?skip=${0}&limit=${200}`
+  );
   return data;
 };

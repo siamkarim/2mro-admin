@@ -20,34 +20,33 @@ export const ROUTE_DEFINITIONS: RouteConfig[] = [
   },
   {
     key: "users",
-    href: "/users",
+    href: "/dashboard/users",
     labelKey: "nav.users",
     descriptionKey: "navDesc.users",
     allowedRoles: ["SUPER_ADMIN", "MANAGER"],
   },
   {
     key: "payments",
-    href: "/payment-management",
+    href: "/dashboard/payment-management",
     labelKey: "nav.payments",
     descriptionKey: "navDesc.payments",
     allowedRoles: ["SUPER_ADMIN", "MANAGER"],
   },
   {
     key: "administration",
-    href: "/administration",
+    href: "/dashboard/administration",
     labelKey: "nav.administration",
     descriptionKey: "navDesc.administration",
     allowedRoles: ["SUPER_ADMIN"],
   },
 ];
 
-export const ROUTE_MAP = ROUTE_DEFINITIONS.reduce<Record<RouteKey, RouteConfig>>(
-  (acc, route) => {
-    acc[route.key] = route;
-    return acc;
-  },
-  {} as Record<RouteKey, RouteConfig>
-);
+export const ROUTE_MAP = ROUTE_DEFINITIONS.reduce<
+  Record<RouteKey, RouteConfig>
+>((acc, route) => {
+  acc[route.key] = route;
+  return acc;
+}, {} as Record<RouteKey, RouteConfig>);
 
 export const ROLE_OPTIONS: UserRole[] = [
   "SUPER_ADMIN",
@@ -79,3 +78,7 @@ export const formatMarginLevel = (account: MarginSnapshot) =>
 export const formatCurrency = (value: number, currency = "$") =>
   `${currency}${value.toLocaleString()}`;
 
+export const formatMarginLevel2 = (account: number) => {
+  if (account === 999999.99) return `0.00%`;
+  return `${account.toLocaleString()}%`;
+};

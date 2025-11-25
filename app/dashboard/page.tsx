@@ -64,7 +64,11 @@ const DashboardPage = () => {
   const [selectedTrader, setSelectedTrader] =
     useState<TraderAccountType | null>(null);
 
-  const curentDate = new Date().toLocaleString();
+  const curentDate = new Date().toLocaleDateString(undefined, {
+    year: "numeric",
+    month: "long",
+    day: "numeric",
+  });
 
   const fetchTraderInformation = useCallback(async () => {
     setLoading(true);
@@ -444,16 +448,15 @@ const DashboardPage = () => {
           </div>
         </section>
 
-        {/* <OnlineUsersPopup
+        <OnlineUsersPopup
           open={isOnlinePopupOpen}
           onClose={() => setIsOnlinePopupOpen(false)}
-          accounts={onlineAccounts}
-        /> */}
-        {/* <MarginCallPopup
+          // accounts={onlineAccounts}
+        />
+        <MarginCallPopup
           open={isMarginPopupOpen}
           onClose={() => setIsMarginPopupOpen(false)}
-          accounts={marginAccounts}
-        /> */}
+        />
         <PendingDepositPopup
           open={isPendingDepositOpen}
           onClose={() => setIsPendingDepositOpen(false)}
@@ -462,7 +465,7 @@ const DashboardPage = () => {
         <PendingWithdrawalPopup
           open={isPendingWithdrawalOpen}
           onClose={() => setIsPendingWithdrawalOpen(false)}
-          withdrawals={pendingWithdrawals}
+         
         />
         <TraderDetailPopup
           open={isTraderPopupOpen}
