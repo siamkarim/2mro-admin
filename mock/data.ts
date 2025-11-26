@@ -117,7 +117,14 @@ export interface BANK {
 }
 
 export interface CRYPTO {
-  id: number;
+  id?: number;
+  symbol: string;
+  address: string;
+  network: string;
+}
+
+export interface CRYPTOINPUT {
+  id?: number;
   symbol: string;
   address: string;
   network: string;

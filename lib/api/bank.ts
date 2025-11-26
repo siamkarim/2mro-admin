@@ -29,7 +29,7 @@ export const addGlobalCrypto = async (payload: {
   wallet_address: string;
   network: string;
 }) => {
-  const { data } = await api.put(apiLink.CYPTO_DEPOSIT, payload);
+  const { data } = await api.post(apiLink.CYPTO_DEPOSIT, payload);
   return data;
 };
 

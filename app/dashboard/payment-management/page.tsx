@@ -154,12 +154,17 @@ const PaymentManagementPage = () => {
     setIsBankPopupOpen(false);
   };
 
-  const handleCryptoSubmit = async (payload: CRYPTO) => {
+  const handleCryptoSubmit = async (payload: {
+    crypto: string;
+    network: string;
+    address: string;
+  }) => {
     await addGlobalCrypto({
-      currency: payload.symbol,
+      currency: payload.crypto,
       wallet_address: payload.address,
       network: payload.network,
     });
+    await loadCryptoInfo();
     setEditingCrypto(null);
   };
 
