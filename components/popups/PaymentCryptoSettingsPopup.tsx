@@ -1,16 +1,20 @@
-'use client';
+"use client";
 
 import { useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
 
 import ModalBase from "@/components/popups/ModalBase";
-import type { CryptoSettings } from "@/components/popups/CryptoSettingsPopup";
 
+export interface Crypto {
+  crypto: string;
+  network: string;
+  address: string;
+}
 interface PaymentCryptoSettingsPopupProps {
   open: boolean;
   onClose: () => void;
-  initial?: CryptoSettings;
-  onSubmit: (payload: CryptoSettings) => void;
+  initial?: Crypto;
+  onSubmit: (payload: Crypto) => void;
 }
 
 const PaymentCryptoSettingsPopup = ({
@@ -20,7 +24,7 @@ const PaymentCryptoSettingsPopup = ({
   onSubmit,
 }: PaymentCryptoSettingsPopupProps) => {
   const { t } = useTranslation();
-  const [formState, setFormState] = useState<CryptoSettings>(
+  const [formState, setFormState] = useState<Crypto>(
     initial ?? { crypto: "", network: "", address: "" }
   );
 
@@ -28,7 +32,7 @@ const PaymentCryptoSettingsPopup = ({
     setFormState(initial ?? { crypto: "", network: "", address: "" });
   }, [initial, open]);
 
-  const handleChange = (key: keyof CryptoSettings, value: string) => {
+  const handleChange = (key: keyof Crypto, value: string) => {
     setFormState((prev) => ({ ...prev, [key]: value }));
   };
 
@@ -41,7 +45,9 @@ const PaymentCryptoSettingsPopup = ({
       open={open}
       onClose={onClose}
       title={
-        initial ? t("ui.crypto_wallet_edit_title") : t("ui.crypto_wallet_add_title")
+        initial
+          ? t("ui.crypto_wallet_edit_title")
+          : t("ui.crypto_wallet_add_title")
       }
       className="max-w-xl"
     >
@@ -92,4 +98,3 @@ const PaymentCryptoSettingsPopup = ({
 };
 
 export default PaymentCryptoSettingsPopup;
-

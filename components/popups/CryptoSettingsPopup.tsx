@@ -1,4 +1,4 @@
-'use client';
+"use client";
 
 import { useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
@@ -57,7 +57,9 @@ const CryptoSettingsPopup = ({
       open={open}
       onClose={onClose}
       title={
-        initial ? t("ui.crypto_channel_edit_modal_title") : t("ui.crypto_channel_add_modal_title")
+        initial
+          ? t("ui.crypto_channel_edit_modal_title")
+          : t("ui.crypto_channel_add_modal_title")
       }
       className="max-w-xl"
     >
@@ -110,5 +112,3 @@ const CryptoSettingsPopup = ({
 };
 
 export default CryptoSettingsPopup;
-
-

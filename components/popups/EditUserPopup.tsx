@@ -1,16 +1,13 @@
-'use client';
+"use client";
 
 import { useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
 
 import Button from "@/components/ui/Button";
 import ModalBase from "@/components/popups/ModalBase";
-import type { AppUser } from "@/mock/data";
+import type { AppUser, UserVerification } from "@/mock/data";
 
-export type EditableUser = AppUser & {
-  password?: string;
-};
-
+export type EditableUser = UserVerification;
 interface EditUserPopupProps {
   open: boolean;
   onClose: () => void;
@@ -19,10 +16,14 @@ interface EditUserPopupProps {
 
 const EditUserPopup = ({ open, onClose, user }: EditUserPopupProps) => {
   const { t } = useTranslation();
-  const [formState, setFormState] = useState<EditableUser | null>(null);
-  const [originalState, setOriginalState] = useState<EditableUser | null>(null);
+  const [formState, setFormState] = useState<UserVerification | null>(null);
+  const [originalState, setOriginalState] = useState<UserVerification | null>(
+    null
+  );
   const [isVerifyConfirmOpen, setIsVerifyConfirmOpen] = useState(false);
-  const [pendingStatus, setPendingStatus] = useState<EditableUser["status"] | null>(null);
+  const [pendingStatus, setPendingStatus] = useState<boolean>(
+    user?.user_is_verified || false
+  );
   const [isEditing, setIsEditing] = useState(false);
   const [isDirty, setIsDirty] = useState(false);
   const [isPasswordVisible, setIsPasswordVisible] = useState(false);
@@ -33,7 +34,7 @@ const EditUserPopup = ({ open, onClose, user }: EditUserPopupProps) => {
       setOriginalState(null);
       setIsEditing(false);
       setIsDirty(false);
-      setPendingStatus(null);
+      setPendingStatus(false);
       setIsVerifyConfirmOpen(false);
       setIsPasswordVisible(false);
       return;
@@ -43,12 +44,15 @@ const EditUserPopup = ({ open, onClose, user }: EditUserPopupProps) => {
     setOriginalState({ ...base });
     setIsEditing(false);
     setIsDirty(false);
-    setPendingStatus(null);
+    setPendingStatus(base.user_is_verified);
     setIsVerifyConfirmOpen(false);
     setIsPasswordVisible(false);
   }, [user]);
 
-  const computeDirty = (next: EditableUser | null, base?: EditableUser | null) => {
+  const computeDirty = (
+    next: EditableUser | null,
+    base?: EditableUser | null
+  ) => {
     if (!next || !(base ?? originalState)) return false;
     const reference = base ?? originalState;
     return JSON.stringify(reference) !== JSON.stringify(next);
@@ -63,17 +67,19 @@ const EditUserPopup = ({ open, onClose, user }: EditUserPopupProps) => {
     });
   };
 
-  const handleChange = (event: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
+  const handleChange = (
+    event: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>
+  ) => {
     if (!formState) return;
     const { name, value } = event.target;
 
-    if (name === "status") {
-      if (value === "verified" && formState.status !== "verified") {
-        setPendingStatus("verified");
+    if (name === "user_is_verified") {
+      if (value === "verified") {
+        setPendingStatus(true);
         setIsVerifyConfirmOpen(true);
         return;
       }
-      updateFormState({ status: value as EditableUser["status"] });
+
       return;
     }
 
@@ -104,7 +110,7 @@ const EditUserPopup = ({ open, onClose, user }: EditUserPopupProps) => {
     );
   }
 
-  const canExportId = Boolean(formState.hasUploadedId);
+  const canExportId = Boolean(formState.user_id);
 
   return (
     <ModalBase
@@ -119,7 +125,7 @@ const EditUserPopup = ({ open, onClose, user }: EditUserPopupProps) => {
             {t("users.columns.userId")}
             <input
               name="userId"
-              value={formState.userId}
+              value={formState.user_id}
               readOnly
               className="mt-1 w-full border border-slate-300 bg-slate-100 px-3 py-2 text-sm"
             />
@@ -127,8 +133,8 @@ const EditUserPopup = ({ open, onClose, user }: EditUserPopupProps) => {
           <label className="text-xs font-semibold uppercase tracking-[0.2em] text-slate-600">
             {t("users.columns.nationalId")}
             <input
-              name="nationalId"
-              value={formState.nationalId}
+              name="nid"
+              value={formState.nid}
               onChange={handleChange}
               readOnly={!isEditing}
               className={`mt-1 w-full border border-slate-300 px-3 py-2 text-sm ${
@@ -152,7 +158,7 @@ const EditUserPopup = ({ open, onClose, user }: EditUserPopupProps) => {
             {t("traders.columns.surname")}
             <input
               name="surname"
-              value={formState.surname}
+              value={formState.first_name}
               onChange={handleChange}
               readOnly={!isEditing}
               className={`mt-1 w-full border border-slate-300 px-3 py-2 text-sm ${
@@ -176,8 +182,8 @@ const EditUserPopup = ({ open, onClose, user }: EditUserPopupProps) => {
             {t("users.columns.dob")}
             <input
               type="date"
-              name="dateOfBirth"
-              value={formState.dateOfBirth}
+              name="date_of_birth"
+              value={formState.date_of_birth}
               onChange={handleChange}
               readOnly={!isEditing}
               className={`mt-1 w-full border border-slate-300 px-3 py-2 text-sm ${
@@ -213,22 +219,26 @@ const EditUserPopup = ({ open, onClose, user }: EditUserPopupProps) => {
             <div className="relative mt-1">
               <span
                 className={`pointer-events-none absolute left-3 top-1/2 h-2 w-2 -translate-y-1/2 rounded-full ${
-                  formState.status === "verified" ? "bg-emerald-500" : "bg-amber-500"
+                  formState.user_is_verified ? "bg-emerald-500" : "bg-amber-500"
                 }`}
               />
               <select
-                name="status"
-                value={formState.status}
+                name="user_is_verified"
+                value={formState.user_is_verified ? "verified" : "not_verified"}
                 onChange={handleChange}
                 disabled={!isEditing}
                 className={`w-full border px-3 py-2 pl-7 text-sm font-semibold uppercase tracking-[0.2em] ${
-                  formState.status === "verified"
+                  formState.user_is_verified
                     ? "border-emerald-400 text-emerald-600"
                     : "border-amber-400 text-amber-500"
                 } ${!isEditing ? "bg-slate-100 cursor-not-allowed" : ""}`}
               >
-                <option value="verified">{t("userVerification.verified")}</option>
-                <option value="not_verified">{t("userVerification.not_verified")}</option>
+                <option value="verified">
+                  {t("userVerification.verified")}
+                </option>
+                <option value="not_verified">
+                  {t("userVerification.not_verified")}
+                </option>
               </select>
             </div>
           </label>
@@ -255,20 +265,24 @@ const EditUserPopup = ({ open, onClose, user }: EditUserPopupProps) => {
                     t("users.columns.status"),
                   ];
                   const row = [
-                    formState.userId,
+                    formState.user_id,
                     formState.name,
-                    formState.surname,
-                    formState.nationalId,
+                    formState.first_name,
+                    formState.nid,
                     formState.phone,
-                    formState.dateOfBirth,
-                    t(`userVerification.${formState.status}`),
+                    formState.date_of_birth,
+                    formState.user_is_verified,
                   ];
-                  const csv = [header, row].map((line) => line.join(",")).join("\n");
-                  const blob = new Blob([csv], { type: "text/csv;charset=utf-8;" });
+                  const csv = [header, row]
+                    .map((line) => line.join(","))
+                    .join("\n");
+                  const blob = new Blob([csv], {
+                    type: "text/csv;charset=utf-8;",
+                  });
                   const url = URL.createObjectURL(blob);
                   const link = document.createElement("a");
                   link.href = url;
-                  link.download = `${formState.userId}.csv`;
+                  link.download = `${formState.user_id}.csv`;
                   link.click();
                   URL.revokeObjectURL(url);
                 }}
@@ -281,7 +295,7 @@ const EditUserPopup = ({ open, onClose, user }: EditUserPopupProps) => {
                 className="w-full"
                 onClick={() => {
                   setIsEditing(true);
-                  updateFormState({ status: "not_verified" });
+                  // updateFormState({ user_is_verified: false });
                 }}
               >
                 {t("actions.blockUser")}
@@ -315,7 +329,7 @@ const EditUserPopup = ({ open, onClose, user }: EditUserPopupProps) => {
           open={isVerifyConfirmOpen}
           onClose={() => {
             setIsVerifyConfirmOpen(false);
-            setPendingStatus(null);
+            setPendingStatus(false);
           }}
           title={t("users.confirmVerify.title")}
           className="max-w-md"
@@ -328,7 +342,7 @@ const EditUserPopup = ({ open, onClose, user }: EditUserPopupProps) => {
                 variant="outline"
                 onClick={() => {
                   setIsVerifyConfirmOpen(false);
-                  setPendingStatus(null);
+                  setPendingStatus(false);
                 }}
               >
                 {t("actions.cancel")}
@@ -337,10 +351,10 @@ const EditUserPopup = ({ open, onClose, user }: EditUserPopupProps) => {
                 type="button"
                 onClick={() => {
                   if (formState && pendingStatus) {
-                    updateFormState({ status: pendingStatus });
+                    updateFormState({ user_is_verified: pendingStatus });
                   }
                   setIsVerifyConfirmOpen(false);
-                  setPendingStatus(null);
+                  setPendingStatus(false);
                 }}
               >
                 {t("actions.confirm")}
@@ -354,4 +368,3 @@ const EditUserPopup = ({ open, onClose, user }: EditUserPopupProps) => {
 };
 
 export default EditUserPopup;
-

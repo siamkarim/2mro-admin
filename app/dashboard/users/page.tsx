@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
 
 import { RoleGuard } from "@/context/AuthContext";
@@ -17,25 +17,25 @@ const UsersPage = () => {
   const [loading, setLoading] = useState(false);
   const [segment, setSegment] = useState<"users" | "blocked">("users");
   const [isEditOpen, setIsEditOpen] = useState(false);
-  const [editingUser, setEditingUser] = useState<AppUser | null>(null);
+  const [editingUser, setEditingUser] = useState<UserVerification | null>(null);
   const [isAddOpen, setIsAddOpen] = useState(false);
   const [isRefreshing, setIsRefreshing] = useState(false);
   const [generatedAt, setGeneratedAt] = useState<string | null>(null);
   const [total, setTotal] = useState(0);
   const [page, setPage] = useState(1);
 
-  const loadUsers = async () => {
+  const loadUsers = useCallback(async () => {
     setLoading(true);
     const skip = (page - 1) * 13;
     const data = await fetchAppUsers(skip, 13, "standard");
     setUserList(data.users);
     setLoading(false);
     setGeneratedAt(new Date().toLocaleString());
-  };
+  }, [page]);
 
   useEffect(() => {
     void loadUsers();
-  }, []);
+  }, [loadUsers]);
 
   const formatDate = (value: string) =>
     new Date(value).toLocaleDateString(undefined, {
@@ -44,12 +44,6 @@ const UsersPage = () => {
       day: "2-digit",
     });
 
-  const displayedUsers = users.filter((user) =>
-    segment === "users"
-      ? user.status === "verified"
-      : user.status !== "verified"
-  );
-
   const handleRefresh = async () => {
     setIsRefreshing(true);
     await loadUsers();
@@ -57,7 +51,7 @@ const UsersPage = () => {
   };
 
   const handleExport = () => {
-    if (!displayedUsers.length) return;
+    if (!userList.length) return;
     const header = [
       t("users.columns.userId"),
       t("users.columns.name"),
@@ -67,14 +61,14 @@ const UsersPage = () => {
       t("users.columns.dob"),
       t("users.columns.status"),
     ];
-    const rows = displayedUsers.map((user) => [
-      user.userId,
+    const rows = userList.map((user) => [
+      user.user_id,
       user.name,
-      user.surname,
-      user.nationalId,
+      user.first_name,
+      user.nid,
       user.phone,
-      formatDate(user.dateOfBirth),
-      t(`userVerification.${user.status}`),
+      formatDate(user.date_of_birth),
+      user.user_is_verified ? "verified" : "unverified",
     ]);
     const csv = [header, ...rows].map((row) => row.join(",")).join("\n");
     const blob = new Blob([csv], { type: "text/csv;charset=utf-8;" });
@@ -218,10 +212,10 @@ const UsersPage = () => {
                         <button
                           type="button"
                           className="border border-slate-300 px-3 py-1 text-[10px] font-semibold uppercase tracking-[0.3em] text-slate-600 hover:bg-slate-100"
-                          // onClick={() => {
-                          //   setEditingUser(user);
-                          //   setIsEditOpen(true);
-                          // }}
+                          onClick={() => {
+                            setEditingUser(user);
+                            setIsEditOpen(true);
+                          }}
                         >
                           {t("users.columns.edit")}
                         </button>

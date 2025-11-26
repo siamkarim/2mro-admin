@@ -552,6 +552,7 @@ const TraderDetailPopup = ({
                   }`}
                   onClick={() => {
                     setActiveTab(tab);
+
                     setSelectedPosition(null);
                     setSelectedOrder(null);
                   }}

@@ -105,6 +105,30 @@ export interface PendingDataType {
   completed_at: string | null;
 }
 
+export interface BANK {
+  bank_name: string;
+  bank_account_name: string;
+  bank_account_number: string;
+  bank_iban: string;
+  bank_swift_code: string;
+  bank_deposit_fee: number;
+  bank_withdrawal_fee: number;
+  bank_commission_per_transaction: number;
+}
+
+export interface CRYPTO {
+  id: number;
+  symbol: string;
+  address: string;
+  network: string;
+}
+
+export interface CryptoFeeResponse {
+  crypto_deposit_fee: number;
+  crypto_withdrawal_fee: number;
+  crypto_commission_per_transaction: number;
+}
+
 export interface AdjustmentLog {
   id: string;
   userId: string;

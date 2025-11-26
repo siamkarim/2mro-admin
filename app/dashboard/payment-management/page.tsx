@@ -1,6 +1,6 @@
-'use client';
+"use client";
 
-import { useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
 
 import type { BankSettings } from "@/components/popups/BankSettingsPopup";
@@ -11,15 +11,22 @@ import CryptoFeeSettingsPopup, {
   type CryptoFeeSettings,
 } from "@/components/popups/CryptoFeeSettingsPopup";
 import type { CryptoSettings } from "@/components/popups/CryptoSettingsPopup";
+import { BANK, CRYPTO } from "@/mock/data";
+import {
+  addGlobalCrypto,
+  getGlobalBank,
+  getGlobalCrypto,
+  updateGlobalBank,
+} from "@/lib/api/bank";
 
-const bankDetailFields: Array<{ labelKey: string; key: keyof BankSettings }> = [
-  { labelKey: "ui.bank_name_label", key: "bankName" },
-  { labelKey: "ui.bank_account_name_label", key: "accountName" },
-  { labelKey: "ui.bank_account_number_label", key: "accountNumber" },
-  { labelKey: "ui.bank_swift_label", key: "swift" },
-  { labelKey: "funding.iban", key: "iban" },
-  { labelKey: "ui.bank_deposit_fee_label", key: "depositFee" },
-  { labelKey: "ui.bank_commission_fee_label", key: "commissionFee" },
+const bankDetailFields: Array<{ labelKey: string; key: keyof BANK }> = [
+  { labelKey: "ui.bank_name_label", key: "bank_name" },
+  { labelKey: "ui.bank_account_name_label", key: "bank_account_name" },
+  { labelKey: "ui.bank_account_number_label", key: "bank_account_number" },
+  { labelKey: "ui.bank_swift_label", key: "bank_swift_code" },
+  { labelKey: "funding.iban", key: "bank_iban" },
+  { labelKey: "ui.bank_deposit_fee_label", key: "bank_deposit_fee" },
+  { labelKey: "ui.bank_commission_fee_label", key: "bank_withdrawal_fee" },
 ];
 
 const paymentTransactions = [
@@ -71,14 +78,15 @@ const paymentTransactions = [
 
 const PaymentManagementPage = () => {
   const { t } = useTranslation();
-  const [bankDetails, setBankDetails] = useState<BankSettings>({
-    bankName: "Forex Bank",
-    accountName: "Forex Holdings",
-    accountNumber: "366363333",
-    swift: "ASDSA523",
-    iban: "SDUJFDJAS5245W5DS",
-    depositFee: "3",
-    commissionFee: "1.2",
+  const [bankDetails, setBankDetails] = useState<BANK>({
+    bank_name: "",
+    bank_account_name: "",
+    bank_account_number: "",
+    bank_iban: "",
+    bank_swift_code: "",
+    bank_deposit_fee: 0,
+    bank_withdrawal_fee: 0,
+    bank_commission_per_transaction: 0,
   });
   const [cryptoAccounts, setCryptoAccounts] = useState<CryptoSettings[]>([
     {
@@ -94,33 +102,63 @@ const PaymentManagementPage = () => {
   });
   const [isBankPopupOpen, setIsBankPopupOpen] = useState(false);
   const [isCryptoFeePopupOpen, setIsCryptoFeePopupOpen] = useState(false);
-  const [editingCrypto, setEditingCrypto] = useState<CryptoSettings | null>(null);
-  const [withdrawSettings, setWithdrawSettings] = useState<{ fee: string; tax: string }>({
+  const [editingCrypto, setEditingCrypto] = useState<CryptoSettings | null>(
+    null
+  );
+  const [withdrawSettings, setWithdrawSettings] = useState<{
+    fee: string;
+    tax: string;
+  }>({
     fee: "5",
     tax: "12",
   });
   const [isWithdrawPopupOpen, setIsWithdrawPopupOpen] = useState(false);
 
-  const handleCopy = (value: string) => {
+  const handleCopy = (value: string | number) => {
     if (!value) return;
-    navigator.clipboard
-      .writeText(value)
-      .catch(() => {
-        /* ignore */
-      });
+    navigator.clipboard.writeText(value.toString()).catch(() => {
+      /* ignore */
+    });
   };
+  const loadBankInfo = useCallback(async () => {
+    const data = await getGlobalBank();
+    const bData = {
+      bank_name: data.bank_name || "",
+      bank_account_name: data.bank_account_name || "",
+      bank_account_number: data.bank_account_number || "",
+      bank_iban: data.bank_iban || "",
+      bank_swift_code: data.bank_swift_code || "",
+      bank_deposit_fee: data.bank_deposit_fee,
+      bank_withdrawal_fee: data.bank_withdrawal_fee,
+      bank_commission_per_transaction: data.bank_commission_per_transaction,
+    };
+    setBankDetails(bData);
+  }, []);
 
-  const handleBankSubmit = (payload: BankSettings) => {
-    setBankDetails(payload);
+  useEffect(() => {
+    void loadBankInfo();
+  }, [loadBankInfo]);
+
+  const loadCryptoInfo = useCallback(async () => {
+    const data = await getGlobalCrypto();
+    setCryptoAccounts(data);
+  }, []);
+
+  useEffect(() => {
+    void loadCryptoInfo();
+  }, [loadCryptoInfo]);
+
+  const handleBankSubmit = async (payload: BANK) => {
+    await updateGlobalBank(payload);
+    await loadBankInfo();
     setIsBankPopupOpen(false);
   };
 
-  const handleCryptoSubmit = (payload: CryptoSettings) => {
-    setCryptoAccounts((prev) => {
-      if (payload.id) {
-        return prev.map((entry) => (entry.id === payload.id ? payload : entry));
-      }
-      return [...prev, { ...payload, id: `crypto-${Date.now()}` }];
+  const handleCryptoSubmit = async (payload: CRYPTO) => {
+    await addGlobalCrypto({
+      currency: payload.symbol,
+      wallet_address: payload.address,
+      network: payload.network,
     });
     setEditingCrypto(null);
   };
@@ -159,7 +197,9 @@ const PaymentManagementPage = () => {
               <p className="text-xs font-semibold uppercase tracking-[0.2em] text-slate-600">
                 {t("ui.bank_info_title")}
               </p>
-              <p className="text-[10px] text-slate-500">{t("ui.bank_info_subtitle")}</p>
+              <p className="text-[10px] text-slate-500">
+                {t("ui.bank_info_subtitle")}
+              </p>
             </div>
             <button
               type="button"
@@ -173,7 +213,8 @@ const PaymentManagementPage = () => {
             {bankDetailFields.map((field) => {
               const value = bankDetails[field.key];
               const isCurrencyField =
-                field.key === "depositFee" || field.key === "commissionFee";
+                field.key === "bank_deposit_fee" ||
+                field.key === "bank_withdrawal_fee";
               return (
                 <div
                   key={field.labelKey}
@@ -206,7 +247,9 @@ const PaymentManagementPage = () => {
               <p className="text-xs font-semibold uppercase tracking-[0.2em] text-slate-600">
                 {t("ui.crypto_info_title")}
               </p>
-              <p className="text-[10px] text-slate-500">{t("ui.crypto_info_subtitle")}</p>
+              <p className="text-[10px] text-slate-500">
+                {t("ui.crypto_info_subtitle")}
+              </p>
             </div>
             <button
               type="button"
@@ -228,8 +271,12 @@ const PaymentManagementPage = () => {
                 <tr>
                   <th className="py-2 px-2">{t("funding.cryptoLabel")}</th>
                   <th className="py-2 px-2">{t("funding.network")}</th>
-                  <th className="py-2 px-2">{t("ui.crypto_wallet_address_label")}</th>
-                  <th className="py-2 px-2 text-right">{t("ui.table_actions_header")}</th>
+                  <th className="py-2 px-2">
+                    {t("ui.crypto_wallet_address_label")}
+                  </th>
+                  <th className="py-2 px-2 text-right">
+                    {t("ui.table_actions_header")}
+                  </th>
                 </tr>
               </thead>
               <tbody className="text-slate-700">
@@ -239,13 +286,15 @@ const PaymentManagementPage = () => {
                     <td className="py-2 px-2">{entry.network}</td>
                     <td className="py-2 px-2">
                       <div className="flex items-center gap-2">
-                        <span className="font-semibold text-slate-900">{entry.address}</span>
+                        <span className="font-semibold text-slate-900">
+                          {entry.address}
+                        </span>
                         <button
                           type="button"
                           className="text-[10px] uppercase tracking-[0.3em] text-slate-500 hover:text-slate-900"
                           onClick={() => handleCopy(entry.address)}
                         >
-                      {t("actions.copy")}
+                          {t("actions.copy")}
                         </button>
                       </div>
                     </td>
@@ -256,14 +305,16 @@ const PaymentManagementPage = () => {
                           className="border border-slate-300 px-3 py-1 text-[10px] font-semibold uppercase tracking-[0.3em] text-slate-600 hover:bg-slate-100"
                           onClick={() => setEditingCrypto(entry)}
                         >
-                      {t("actions.edit")}
+                          {t("actions.edit")}
                         </button>
                         <button
                           type="button"
                           className="border border-red-500 px-3 py-1 text-[10px] font-semibold uppercase tracking-[0.3em] text-red-600 hover:bg-red-50"
-                          onClick={() => entry.id && handleRemoveCrypto(entry.id)}
+                          onClick={() =>
+                            entry.id && handleRemoveCrypto(entry.id)
+                          }
                         >
-                      {t("ui.common_delete_button")}
+                          {t("ui.common_delete_button")}
                         </button>
                       </div>
                     </td>
@@ -312,7 +363,9 @@ const PaymentManagementPage = () => {
             <p className="text-xs font-semibold uppercase tracking-[0.2em] text-slate-600">
               {t("ui.withdraw_settings_section_title")}
             </p>
-            <p className="text-[10px] text-slate-500">{t("ui.withdraw_settings_subtitle")}</p>
+            <p className="text-[10px] text-slate-500">
+              {t("ui.withdraw_settings_subtitle")}
+            </p>
           </div>
           <button
             type="button"
@@ -327,13 +380,17 @@ const PaymentManagementPage = () => {
             <p className="text-[10px] font-semibold uppercase tracking-[0.3em] text-slate-500">
               {t("ui.withdraw_fee_label")}
             </p>
-            <p className="text-xl font-semibold text-slate-900">${withdrawSettings.fee}</p>
+            <p className="text-xl font-semibold text-slate-900">
+              ${withdrawSettings.fee}
+            </p>
           </div>
           <div className="rounded border border-slate-100 bg-slate-50 p-3">
             <p className="text-[10px] font-semibold uppercase tracking-[0.3em] text-slate-500">
               {t("ui.income_tax_label")}
             </p>
-            <p className="text-xl font-semibold text-slate-900">{withdrawSettings.tax}%</p>
+            <p className="text-xl font-semibold text-slate-900">
+              {withdrawSettings.tax}%
+            </p>
           </div>
         </div>
       </section>
@@ -366,13 +423,16 @@ const PaymentManagementPage = () => {
             </thead>
             <tbody className="text-slate-700">
               {paymentTransactions.map((tx) => {
-                const typeLabel = tx.type === "bank" ? t("filters.bank") : t("filters.crypto");
+                const typeLabel =
+                  tx.type === "bank" ? t("filters.bank") : t("filters.crypto");
                 const directionLabel =
                   tx.direction === "withdrawal"
                     ? t("ui.table_withdrawal_label")
                     : t("ui.table_deposit_label");
                 const directionColor =
-                  tx.direction === "withdrawal" ? "text-red-500" : "text-emerald-600";
+                  tx.direction === "withdrawal"
+                    ? "text-red-500"
+                    : "text-emerald-600";
                 const statusClasses =
                   tx.status === "approved"
                     ? "border-emerald-500 text-emerald-600"
@@ -381,8 +441,12 @@ const PaymentManagementPage = () => {
                     : "border-red-500 text-red-600";
                 return (
                   <tr key={tx.id} className="border-b border-slate-100">
-                    <td className="py-3 px-2 font-semibold text-slate-900">{tx.id}</td>
-                    <td className="py-3 px-2 font-semibold text-slate-900">{tx.userId}</td>
+                    <td className="py-3 px-2 font-semibold text-slate-900">
+                      {tx.id}
+                    </td>
+                    <td className="py-3 px-2 font-semibold text-slate-900">
+                      {tx.userId}
+                    </td>
                     <td className="py-3 px-2">{tx.name}</td>
                     <td className="py-3 px-2">{tx.surname}</td>
                     <td className="py-3 px-2">{typeLabel}</td>
@@ -445,4 +509,3 @@ const PaymentManagementPage = () => {
 };
 
 export default PaymentManagementPage;
-
