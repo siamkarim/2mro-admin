@@ -14,9 +14,13 @@ import type { CryptoSettings } from "@/components/popups/CryptoSettingsPopup";
 import { BANK, CRYPTO } from "@/mock/data";
 import {
   addGlobalCrypto,
+  deleteGlobalCrypto,
   getGlobalBank,
   getGlobalCrypto,
+  getGlobalCryptoFee,
   updateGlobalBank,
+  updateGlobalCrypto,
+  updateGlobalCryptoFee,
 } from "@/lib/api/bank";
 
 const bankDetailFields: Array<{ labelKey: string; key: keyof BANK }> = [
@@ -92,16 +96,18 @@ const PaymentManagementPage = () => {
     {
       id: "crypto-1",
       crypto: "USDT",
+      symbol: "USDT",
       network: "TRC-20",
       address: "894HFDSCN98444",
     },
   ]);
   const [cryptoFeeGeneral, setCryptoFeeGeneral] = useState<CryptoFeeSettings>({
-    deposit: "3",
-    commission: "2",
+    crypto_deposit_fee: 0,
+    crypto_withdrawal_fee: 0,
   });
   const [isBankPopupOpen, setIsBankPopupOpen] = useState(false);
   const [isCryptoFeePopupOpen, setIsCryptoFeePopupOpen] = useState(false);
+
   const [editingCrypto, setEditingCrypto] = useState<CryptoSettings | null>(
     null
   );
@@ -148,6 +154,15 @@ const PaymentManagementPage = () => {
     void loadCryptoInfo();
   }, [loadCryptoInfo]);
 
+  const loadCryptoFee = useCallback(async () => {
+    const data = await getGlobalCryptoFee();
+    setCryptoFeeGeneral(data);
+  }, []);
+
+  useEffect(() => {
+    void loadCryptoFee();
+  }, [loadCryptoFee]);
+
   const handleBankSubmit = async (payload: BANK) => {
     await updateGlobalBank(payload);
     await loadBankInfo();
@@ -168,12 +183,14 @@ const PaymentManagementPage = () => {
     setEditingCrypto(null);
   };
 
-  const handleRemoveCrypto = (id: string) => {
-    setCryptoAccounts((prev) => prev.filter((entry) => entry.id !== id));
+  const handleRemoveCrypto = async (id: string) => {
+    await deleteGlobalCrypto(Number(id));
+    await loadCryptoFee();
   };
 
-  const handleCryptoFeeSubmit = (payload: CryptoFeeSettings) => {
-    setCryptoFeeGeneral(payload);
+  const handleCryptoFeeSubmit = async (payload: CryptoFeeSettings) => {
+    await updateGlobalCryptoFee(payload);
+    await loadCryptoFee();
     setIsCryptoFeePopupOpen(false);
   };
 
@@ -287,7 +304,7 @@ const PaymentManagementPage = () => {
               <tbody className="text-slate-700">
                 {cryptoAccounts.map((entry) => (
                   <tr key={entry.id} className="border-b border-slate-100">
-                    <td className="py-2 px-2">{entry.crypto}</td>
+                    <td className="py-2 px-2">{entry.symbol}</td>
                     <td className="py-2 px-2">{entry.network}</td>
                     <td className="py-2 px-2">
                       <div className="flex items-center gap-2">
@@ -308,7 +325,14 @@ const PaymentManagementPage = () => {
                         <button
                           type="button"
                           className="border border-slate-300 px-3 py-1 text-[10px] font-semibold uppercase tracking-[0.3em] text-slate-600 hover:bg-slate-100"
-                          onClick={() => setEditingCrypto(entry)}
+                          onClick={() =>
+                            setEditingCrypto({
+                              crypto: entry.symbol || "",
+                              network: entry.network,
+                              address: entry.address,
+                              id: entry.id,
+                            })
+                          }
                         >
                           {t("actions.edit")}
                         </button>
@@ -347,7 +371,7 @@ const PaymentManagementPage = () => {
                   {t("ui.crypto_fee_deposit_label")}
                 </p>
                 <p className="text-base font-semibold text-slate-900">
-                  ${cryptoFeeGeneral.deposit}
+                  ${cryptoFeeGeneral.crypto_deposit_fee}
                 </p>
               </div>
               <div>
@@ -355,7 +379,7 @@ const PaymentManagementPage = () => {
                   {t("ui.crypto_fee_commission_label")}
                 </p>
                 <p className="text-base font-semibold text-slate-900">
-                  ${cryptoFeeGeneral.commission}
+                  ${cryptoFeeGeneral.crypto_withdrawal_fee}
                 </p>
               </div>
             </div>

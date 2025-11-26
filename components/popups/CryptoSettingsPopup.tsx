@@ -8,6 +8,7 @@ import ModalBase from "@/components/popups/ModalBase";
 export interface CryptoSettings {
   id?: string;
   crypto: string;
+  symbol?: string;
   network: string;
   address: string;
 }

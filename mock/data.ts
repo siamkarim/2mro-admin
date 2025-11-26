@@ -105,6 +105,77 @@ export interface PendingDataType {
   completed_at: string | null;
 }
 
+export interface OpenPosition {
+  user_id: number;
+  pid_id: number;
+  symbol: string;
+  created_time: string;
+  volume: number;
+  direction: string; // <-- allow any string
+  enter_price: number;
+  price: number;
+  stop_loss: number;
+  take_profit: number;
+  swap: number;
+  commission: number;
+  profit: number;
+  net_profit: number;
+}
+
+export interface OrderPosition {
+  user_id: number;
+  pid_no: number;
+  symbol: string;
+  created_time: string; // ISO string
+  volume: number;
+  direction: string;
+  order_price: number;
+  price: number;
+  stop_loss: number;
+  take_profit: number;
+}
+export interface ClosedPosition {
+  user_id: number;
+  closed_pid_no: number;
+  symbol: string;
+  created_time: string; // ISO string
+  close_time: string; // ISO string
+  volume: number;
+  direction: string;
+  enter_price: number;
+  close_price: number;
+  stop_loss: number;
+  take_profit: number;
+  swap: number;
+  commission: number;
+  profit: number;
+  net_profit: number;
+}
+
+export interface UserSummary {
+  user_id: number;
+  name: string;
+  balance: number;
+  credit: number;
+  profit: number;
+  equity: number;
+  margin: number;
+  free_margin: number;
+  all_swaps: number;
+  all_commission: number;
+  all_profit: number;
+  all_total_profit: number;
+}
+
+export interface TransectionUser {
+  transaction_id: string;
+  type: string;
+  method: string;
+  amount: number;
+  status: string;
+  created_at: string;
+}
+
 export interface BANK {
   bank_name: string;
   bank_account_name: string;

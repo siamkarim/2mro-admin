@@ -45,7 +45,7 @@ const PaymentCryptoSettingsPopup = ({
       open={open}
       onClose={onClose}
       title={
-        initial
+        initial?.crypto !== ""
           ? t("ui.crypto_wallet_edit_title")
           : t("ui.crypto_wallet_add_title")
       }

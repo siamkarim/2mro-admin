@@ -310,7 +310,7 @@ const DashboardPage = () => {
               <p className="text-sm font-semibold text-slate-900">
                 {t("traders.title")}
               </p>
-              <p className="text-xs text-slate-500">Forex · {curentDate}</p>
+              <p className="text-xs text-slate-500">Forex · </p>
             </div>
             <div className="flex flex-wrap items-center gap-3">
               <div className="flex border border-slate-300">
@@ -465,7 +465,6 @@ const DashboardPage = () => {
         <PendingWithdrawalPopup
           open={isPendingWithdrawalOpen}
           onClose={() => setIsPendingWithdrawalOpen(false)}
-         
         />
         <TraderDetailPopup
           open={isTraderPopupOpen}

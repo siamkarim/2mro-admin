@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
 
 import BankSettingsPopup, {
@@ -20,10 +20,15 @@ import PaymentWithdrawSettingsPopup from "@/components/popups/PaymentWithdrawSet
 import ModalBase from "@/components/popups/ModalBase";
 import type {
   AdjustmentLog,
+  ClosedPosition,
+  OpenPosition,
   TraderAccount,
   TraderAccountType,
+  TransectionUser,
 } from "@/mock/data";
-import { mockAdjustmentLogs } from "@/mock/data";
+import { mockAdjustmentLogs, UserSummary } from "@/mock/data";
+import { getTraderPosition } from "@/lib/api/position";
+import { getUserTransaction } from "@/lib/api/transaction";
 
 interface TraderDetailPopupProps {
   open: boolean;
@@ -109,155 +114,23 @@ const transactionHeaderKeys = [
   "labels.status",
 ];
 
-const mockOpenPositions = [
-  {
-    id: "pos-1",
-    orderNo: "ORD-40018",
-    symbol: "EURUSD",
-    createdAt: "2025-02-14 09:32",
-    volume: "1.00",
-    direction: "Buy",
-    enterPrice: "1.07210",
-    price: "1.07430",
-    stopLoss: "1.06600",
-    takeProfit: "1.08000",
-    swap: -1.2,
-    commission: -3.5,
-    profit: 220,
-    netProfit: 215.3,
-  },
-  {
-    id: "pos-2",
-    orderNo: "ORD-40027",
-    symbol: "XAUUSD",
-    createdAt: "2025-02-13 15:08",
-    volume: "0.50",
-    direction: "Sell",
-    enterPrice: "2058.40",
-    price: "2052.10",
-    stopLoss: "2066.00",
-    takeProfit: "2045.00",
-    swap: -0.8,
-    commission: -2.1,
-    profit: 315,
-    netProfit: 312.1,
-  },
-];
-
-type Position = (typeof mockOpenPositions)[number];
-
-const mockOrderPositions: OrderPosition[] = [
-  {
-    id: "ord-1",
-    orderNo: "ORD-9021",
-    symbol: "GBPUSD",
-    createdAt: "2025-02-12 11:45",
-    volume: "0.80",
-    direction: "Buy",
-    orderPrice: "1.26340",
-    currentPrice: "1.26710",
-    stopLoss: "1.25800",
-    takeProfit: "1.27200",
-  },
-  {
-    id: "ord-2",
-    orderNo: "ORD-9022",
-    symbol: "USOIL",
-    createdAt: "2025-02-11 17:22",
-    volume: "1.20",
-    direction: "Sell",
-    orderPrice: "74.30",
-    currentPrice: "73.10",
-    stopLoss: "75.10",
-    takeProfit: "71.80",
-  },
-];
-
-const mockClosedPositions = [
-  {
-    id: "cpos-1",
-    orderNo: "ORD-3011",
-    symbol: "EURJPY",
-    createdAt: "2025-02-10 08:20",
-    closeTime: "2025-02-10 14:35",
-    volume: "0.60",
-    direction: "Buy",
-    enterPrice: "160.210",
-    closePrice: "160.980",
-    stopLoss: "159.800",
-    takeProfit: "161.200",
-    swap: -0.5,
-    commission: -1.7,
-    profit: 180,
-    netProfit: 177.8,
-  },
-  {
-    id: "cpos-2",
-    orderNo: "ORD-3012",
-    symbol: "AUDUSD",
-    createdAt: "2025-02-09 09:05",
-    closeTime: "2025-02-09 15:42",
-    volume: "1.10",
-    direction: "Sell",
-    enterPrice: "0.65720",
-    closePrice: "0.65380",
-    stopLoss: "0.66000",
-    takeProfit: "0.65200",
-    swap: -0.9,
-    commission: -2.3,
-    profit: 375,
-    netProfit: 371.8,
-  },
-];
-
-type ClosedPosition = (typeof mockClosedPositions)[number];
-interface TransactionItem {
-  id: string;
-  type: "bank" | "crypto";
-  direction: "withdrawal" | "deposit";
-  time: string;
-  amount: number;
-  status: "approved" | "rejected";
-}
-
-const mockTransactions: TransactionItem[] = [
-  {
-    id: "TRX-1001",
-    type: "bank",
-    direction: "deposit",
-    time: "2025-02-12 10:15",
-    amount: 2500,
-    status: "approved",
-  },
-  {
-    id: "TRX-1002",
-    type: "crypto",
-    direction: "withdrawal",
-    time: "2025-02-11 16:48",
-    amount: 1800,
-    status: "rejected",
-  },
-  {
-    id: "TRX-1003",
-    type: "bank",
-    direction: "withdrawal",
-    time: "2025-02-10 13:05",
-    amount: 4200,
-    status: "approved",
-  },
-];
-
 const TraderDetailPopup = ({
   open,
   onClose,
   account,
 }: TraderDetailPopupProps) => {
   const { t } = useTranslation();
-  const [positions, setPositions] = useState<Position[]>(mockOpenPositions);
-  const [orderPositions, setOrderPositions] =
-    useState<OrderPosition[]>(mockOrderPositions);
-  const closedPositions: ClosedPosition[] = mockClosedPositions;
-  const transactions = mockTransactions;
+  const [summary, setSummary] = useState<
+    { label: string; value: string | number }[]
+  >([]);
+  const [totals, setTotals] = useState<
+    { label: string; value: string | number }[]
+  >([]);
+  const [positions, setPositions] = useState<OpenPosition[]>([]);
+  const [orderPositions, setOrderPositions] = useState<OrderPosition[]>([]);
+
+  const [closedPositions, setClosedPositions] = useState<ClosedPosition[]>([]);
+
   const [bankDetails, setBankDetails] = useState<BankSettings>({
     bankName: "Forex Bank",
     accountName: "Forex Holdings",
@@ -278,8 +151,8 @@ const TraderDetailPopup = ({
   ]);
   const [cryptoActive, setCryptoActive] = useState(true);
   const [cryptoFeeGeneral, setCryptoFeeGeneral] = useState<CryptoFeeSettings>({
-    deposit: "3",
-    commission: "2",
+    crypto_deposit_fee: 0,
+    crypto_withdrawal_fee: 0,
   });
   const [withdrawSettings, setWithdrawSettings] = useState<{
     fee: string;
@@ -288,6 +161,8 @@ const TraderDetailPopup = ({
     fee: "5",
     tax: "12",
   });
+
+  const [transactions, setTransactions] = useState<TransectionUser[]>([]);
   const [withdrawActive, setWithdrawActive] = useState(true);
   const [isWithdrawPopupOpen, setIsWithdrawPopupOpen] = useState(false);
   const [leverageRatio, setLeverageRatio] = useState("100");
@@ -313,29 +188,115 @@ const TraderDetailPopup = ({
   const [manualAdjustmentLogs, setManualAdjustmentLogs] = useState<
     Record<string, AdjustmentLog[]>
   >({});
-  const [selectedPosition, setSelectedPosition] = useState<Position | null>(
+  const [selectedPosition, setSelectedPosition] = useState<OpenPosition | null>(
     null
   );
   const [selectedOrder, setSelectedOrder] = useState<OrderPosition | null>(
     null
   );
+
+  const [selectedClosed, setSelectedClosed] = useState<ClosedPosition | null>(
+    null
+  );
+
   const [isEditPositionOpen, setIsEditPositionOpen] = useState(false);
   const [isEditOrderOpen, setIsEditOrderOpen] = useState(false);
   const [activeTab, setActiveTab] =
     useState<(typeof tabs)[number]>("Open Positions");
 
-  const baseAdjustmentLogs = useMemo(() => {
-    if (!account) return [];
-    return mockAdjustmentLogs.filter((log) => log.user_id === account.user_id);
-  }, [account]);
+  const fetchTraderPosition = useCallback(async () => {
+    if (!account) return;
 
-  const adjustmentLogs = useMemo(() => {
-    if (!account) return [];
-    const manual = manualAdjustmentLogs[account.user_id] ?? [];
-    return [...manual, ...baseAdjustmentLogs];
-  }, [manualAdjustmentLogs, baseAdjustmentLogs, account]);
+    const positionName =
+      activeTab === "Open Positions"
+        ? "open"
+        : activeTab === "Order Positions"
+        ? "order"
+        : "close";
 
-  if (!account) return null;
+    const data = await getTraderPosition(
+      account.user_id || 1,
+      positionName,
+      account.account_id || 1
+    );
+
+    setSummary([
+      { label: t("traders.columns.userId"), value: data.userSummary.user_id },
+      { label: t("traders.columns.name"), value: data.userSummary.name },
+      {
+        label: t("traders.columns.balance"),
+        value: `$${data.userSummary.balance.toLocaleString()}`,
+      },
+      {
+        label: t("traders.columns.credit"),
+        value: data.userSummary.credit.toLocaleString(),
+      },
+      {
+        label: t("ui.label_profit"),
+        value: `$${(
+          data.userSummary.equity - data.userSummary.balance
+        ).toLocaleString(undefined, { maximumFractionDigits: 2 })}`,
+      },
+      {
+        label: t("dashboard.cards.equity"),
+        value: `$${data.userSummary.equity.toLocaleString()}`,
+      },
+      {
+        label: t("traders.columns.margin"),
+        value: `$${data.userSummary.margin.toLocaleString()}`,
+      },
+      {
+        label: t("traders.columns.freeMargin"),
+        value: `$${data.userSummary.free_margin.toLocaleString()}`,
+      },
+    ]);
+    setTotals([
+      {
+        label: "ui.total_swaps_label",
+        value: data.userSummary.all_swaps.toLocaleString(),
+      },
+      {
+        label: "ui.total_commission_label",
+        value: data.userSummary.all_commission.toLocaleString(),
+      },
+      {
+        label: "ui.total_profit_label",
+        value: data.userSummary.all_profit.toLocaleString(),
+      },
+      {
+        label: "ui.total_total_profit_label",
+        value: data.userSummary.all_total_profit.toLocaleString(),
+      },
+    ]);
+
+    if (activeTab === "Open Positions") {
+      setPositions(data.positions.open);
+    } else if (activeTab === "Order Positions") {
+      setOrderPositions(data.positions.order);
+    } else {
+      setClosedPositions(data.positions.close);
+    }
+  }, [account, activeTab, t]);
+
+  useEffect(() => {
+    void fetchTraderPosition();
+  }, [fetchTraderPosition]);
+
+  const fetchUserTranction = useCallback(async () => {
+    if (!account) return;
+
+    const data = await getUserTransaction(account.user_id || 1, "all");
+    setTransactions(data.transactions);
+  }, [account, activeTab, t]);
+
+  useEffect(() => {
+    void fetchUserTranction();
+  }, [fetchUserTranction]);
+
+  // const baseAdjustmentLogs = useMemo(() => {
+  //   if (!account) return [];
+  //   return mockAdjustmentLogs.filter((log) => log.user_id === account.user_id);
+  // }, [account]);
 
   const isOpenTab = activeTab === "Open Positions";
   const isOrderTab = activeTab === "Order Positions";
@@ -409,12 +370,6 @@ const TraderDetailPopup = ({
     setLeverageRatio(leverageDraft || "1");
   };
 
-  const accountId = account.user_id;
-  const currentCredit =
-    (account.credit ?? 0) + (creditAdjustments[accountId] ?? 0);
-  const currentBalance =
-    (account.balance ?? 0) + (balanceAdjustments[accountId] ?? 0);
-
   const requestAdjustment = (
     target: "credit" | "balance",
     mode: "add" | "remove"
@@ -425,86 +380,88 @@ const TraderDetailPopup = ({
     setPendingAdjustment({ target, mode, amount });
   };
 
-  const confirmAdjustment = () => {
-    if (!pendingAdjustment) return;
-    const { target, mode, amount } = pendingAdjustment;
-    const delta = mode === "add" ? amount : -amount;
-    let updatedCredit = currentCredit;
-    let updatedBalance = currentBalance;
-    const baseCredit = account.credit ?? 0;
-    const baseBalance = account.balance ?? 0;
+  // const confirmAdjustment = () => {
+  //   if (!pendingAdjustment) return;
+  //   const { target, mode, amount } = pendingAdjustment;
+  //   const delta = mode === "add" ? amount : -amount;
+  //   let updatedCredit = currentCredit;
+  //   let updatedBalance = currentBalance;
+  //   const baseCredit = account.credit ?? 0;
+  //   const baseBalance = account.balance ?? 0;
 
-    if (target === "credit") {
-      updatedCredit = Math.max(0, currentCredit + delta);
-      setCreditAdjustments((prev) => ({
-        ...prev,
-        [accountId]: updatedCredit - baseCredit,
-      }));
-      setCreditInput("");
-    } else {
-      updatedBalance = Math.max(0, currentBalance + delta);
-      setBalanceAdjustments((prev) => ({
-        ...prev,
-        [accountId]: updatedBalance - baseBalance,
-      }));
-      setBalanceInput("");
-    }
+  //   if (target === "credit") {
+  //     updatedCredit = Math.max(0, currentCredit + delta);
+  //     setCreditAdjustments((prev) => ({
+  //       ...prev,
+  //       [accountId]: updatedCredit - baseCredit,
+  //     }));
+  //     setCreditInput("");
+  //   } else {
+  //     updatedBalance = Math.max(0, currentBalance + delta);
+  //     setBalanceAdjustments((prev) => ({
+  //       ...prev,
+  //       [accountId]: updatedBalance - baseBalance,
+  //     }));
+  //     setBalanceInput("");
+  //   }
 
-    setManualAdjustmentLogs((prev) => {
-      const existing = prev[accountId] ?? [];
-      const nextLog: AdjustmentLog = {
-        id: `log-${Date.now()}`,
-        userId: accountId,
-        target,
-        mode,
-        amount,
-        createdAt: new Date().toLocaleString(),
-        creditAfter: updatedCredit,
-        balanceAfter: updatedBalance,
-      };
-      return { ...prev, [accountId]: [nextLog, ...existing] };
-    });
+  //   // setManualAdjustmentLogs((prev) => {
+  //   //   const existing = prev[accountId] ?? [];
+  //   //   const nextLog: AdjustmentLog = {
+  //   //     id: `log-${Date.now()}`,
+  //   //     userId: accountId,
+  //   //     target,
+  //   //     mode,
+  //   //     amount,
+  //   //     createdAt: new Date().toLocaleString(),
+  //   //     creditAfter: updatedCredit,
+  //   //     balanceAfter: updatedBalance,
+  //   //   };
+  //   //   return { ...prev, [accountId]: [nextLog, ...existing] };
+  //   // });
 
-    setPendingAdjustment(null);
-  };
+  //   setPendingAdjustment(null);
+  // };
 
   const cancelAdjustment = () => {
     setPendingAdjustment(null);
   };
 
-  const summary = [
-    { label: t("traders.columns.userId"), value: account.userId },
-    {
-      label: t("traders.columns.name"),
-      value: `${account.name} ${account.surname}`,
-    },
-    {
-      label: t("traders.columns.balance"),
-      value: `$${account.balance.toLocaleString()}`,
-    },
-    {
-      label: t("traders.columns.credit"),
-      value: account.credit.toLocaleString(),
-    },
-    {
-      label: t("ui.label_profit"),
-      value: `$${(account.equity - account.balance).toLocaleString(undefined, {
-        maximumFractionDigits: 2,
-      })}`,
-    },
-    {
-      label: t("dashboard.cards.equity"),
-      value: `$${account.equity.toLocaleString()}`,
-    },
-    {
-      label: t("traders.columns.margin"),
-      value: `$${account.margin.toLocaleString()}`,
-    },
-    {
-      label: t("traders.columns.freeMargin"),
-      value: `$${account.freeMargin.toLocaleString()}`,
-    },
-  ];
+  //   { label: t("traders.columns.userId"), value: userSummary.user_id },
+  //   {
+  //     label: t("traders.columns.name"),
+  //     value: `${userSummary.name}`,
+  //   },
+  //   {
+  //     label: t("traders.columns.balance"),
+  //     value: `$${userSummary.balance.toLocaleString()}`,
+  //   },
+  //   {
+  //     label: t("traders.columns.credit"),
+  //     value: userSummary.credit.toLocaleString(),
+  //   },
+  //   {
+  //     label: t("ui.label_profit"),
+  //     value: `$${(userSummary.equity - userSummary.balance).toLocaleString(
+  //       undefined,
+  //       {
+  //         maximumFractionDigits: 2,
+  //       }
+  //     )}`,
+  //   },
+  //   {
+  //     label: t("dashboard.cards.equity"),
+  //     value: `$${userSummary.equity.toLocaleString()}`,
+  //   },
+  //   {
+  //     label: t("traders.columns.margin"),
+  //     value: `$${userSummary.margin.toLocaleString()}`,
+  //   },
+  //   {
+  //     label: t("traders.columns.freeMargin"),
+  //     value: `$${userSummary.free_margin.toLocaleString()}`,
+  //   },
+  // ];
 
   return (
     <ModalBase
@@ -564,8 +521,8 @@ const TraderDetailPopup = ({
           </div>
           <div className="mt-3 flex flex-wrap gap-4 text-[11px] font-semibold uppercase tracking-[0.25em] text-slate-900">
             {totals.map((item) => (
-              <div key={item.labelKey} className="min-w-[150px]">
-                <p className="text-slate-900">{t(item.labelKey)}</p>
+              <div key={item.label} className="min-w-[150px]">
+                <p className="text-slate-900">{t(item.label)}</p>
                 <p className="text-base text-red-600">{item.value}</p>
               </div>
             ))}
@@ -625,7 +582,7 @@ const TraderDetailPopup = ({
                 </thead>
                 <tbody className="text-slate-700">
                   {positions.map((row) => {
-                    const isSelected = selectedPosition?.id === row.id;
+                    const isSelected = selectedPosition?.pid_id === row.pid_id;
                     const directionColor =
                       row.direction === "Buy"
                         ? "text-emerald-600"
@@ -635,24 +592,24 @@ const TraderDetailPopup = ({
                         ? "text-emerald-600"
                         : "text-red-500";
                     const netProfitColor =
-                      Number(row.netProfit) >= 0
+                      Number(row.net_profit) >= 0
                         ? "text-emerald-600"
                         : "text-red-500";
                     return (
                       <tr
-                        key={row.id}
+                        key={row.pid_id}
                         className={`border-t border-slate-200 cursor-pointer transition ${
                           isSelected ? "bg-slate-100" : "hover:bg-slate-50"
                         }`}
                         onClick={() => {
                           setSelectedOrder(null);
                           setSelectedPosition((current) =>
-                            current?.id === row.id ? null : row
+                            current?.pid_id === row.pid_id ? null : row
                           );
                         }}
                       >
                         <td className="py-3 px-3">{row.symbol}</td>
-                        <td className="py-3 px-3">{row.createdAt}</td>
+                        <td className="py-3 px-3">{row.created_time}</td>
                         <td className="py-3 px-3">{row.volume}</td>
                         <td
                           className={`py-3 px-3 font-semibold ${directionColor}`}
@@ -663,10 +620,10 @@ const TraderDetailPopup = ({
                               : "ui.option_sell_label"
                           )}
                         </td>
-                        <td className="py-3 px-3">{row.enterPrice}</td>
+                        <td className="py-3 px-3">{row.enter_price}</td>
                         <td className="py-3 px-3">{row.price}</td>
-                        <td className="py-3 px-3">{row.stopLoss}</td>
-                        <td className="py-3 px-3">{row.takeProfit}</td>
+                        <td className="py-3 px-3">{row.stop_loss}</td>
+                        <td className="py-3 px-3">{row.take_profit}</td>
                         <td className="py-3 px-3">
                           {row.swap >= 0
                             ? `$${row.swap}`
@@ -681,7 +638,7 @@ const TraderDetailPopup = ({
                           ${row.profit.toLocaleString()}
                         </td>
                         <td className={`py-3 px-3 ${netProfitColor}`}>
-                          ${row.netProfit.toLocaleString()}
+                          ${row.net_profit.toLocaleString()}
                         </td>
                       </tr>
                     );
@@ -765,17 +722,20 @@ const TraderDetailPopup = ({
                         ? "text-emerald-600"
                         : "text-red-500";
                     const netProfitColor =
-                      Number(row.netProfit) >= 0
+                      Number(row.net_profit) >= 0
                         ? "text-emerald-600"
                         : "text-red-500";
                     return (
-                      <tr key={row.id} className="border-t border-slate-200">
+                      <tr
+                        key={row.user_id}
+                        className="border-t border-slate-200"
+                      >
                         <td className="py-3 px-3 font-semibold text-slate-900">
-                          {row.orderNo}
+                          {row.user_id}
                         </td>
                         <td className="py-3 px-3">{row.symbol}</td>
-                        <td className="py-3 px-3">{row.createdAt}</td>
-                        <td className="py-3 px-3">{row.closeTime}</td>
+                        <td className="py-3 px-3">{row.created_time}</td>
+                        <td className="py-3 px-3">{row.close_time}</td>
                         <td className="py-3 px-3">{row.volume}</td>
                         <td
                           className={`py-3 px-3 font-semibold ${directionColor}`}
@@ -786,10 +746,10 @@ const TraderDetailPopup = ({
                               : "ui.option_sell_label"
                           )}
                         </td>
-                        <td className="py-3 px-3">{row.enterPrice}</td>
-                        <td className="py-3 px-3">{row.closePrice}</td>
-                        <td className="py-3 px-3">{row.stopLoss}</td>
-                        <td className="py-3 px-3">{row.takeProfit}</td>
+                        <td className="py-3 px-3">{row.enter_price}</td>
+                        <td className="py-3 px-3">{row.close_price}</td>
+                        <td className="py-3 px-3">{row.stop_loss}</td>
+                        <td className="py-3 px-3">{row.take_profit}</td>
                         <td className="py-3 px-3">
                           {row.swap >= 0
                             ? `$${row.swap}`
@@ -804,7 +764,7 @@ const TraderDetailPopup = ({
                           ${row.profit.toLocaleString()}
                         </td>
                         <td className={`py-3 px-3 ${netProfitColor}`}>
-                          ${row.netProfit.toLocaleString()}
+                          ${row.net_profit.toLocaleString()}
                         </td>
                       </tr>
                     );
@@ -823,17 +783,17 @@ const TraderDetailPopup = ({
                   </tr>
                 </thead>
                 <tbody className="text-slate-700">
-                  {transactions.map((entry) => {
+                  {transactions.map((entry, index) => {
                     const typeLabel =
                       entry.type === "bank"
                         ? t("filters.bank")
                         : t("filters.crypto");
                     const directionLabel =
-                      entry.direction === "withdrawal"
+                      entry.method === "withdrawal"
                         ? t("ui.table_withdrawal_label")
                         : t("ui.table_deposit_label");
                     const directionColor =
-                      entry.direction === "withdrawal"
+                      entry.status === "withdrawal"
                         ? "text-red-500"
                         : "text-blue-600";
                     const statusColor =
@@ -841,16 +801,16 @@ const TraderDetailPopup = ({
                         ? "text-emerald-600"
                         : "text-red-500";
                     const amountPrefix =
-                      entry.direction === "withdrawal" ? "-$" : "+$";
+                      entry.method === "withdrawal" ? "-$" : "+$";
                     const amountColor =
-                      entry.direction === "withdrawal"
+                      entry?.status === "withdrawal"
                         ? "text-red-500"
                         : "text-emerald-600";
                     const formattedAmount = `${amountPrefix}${entry.amount.toLocaleString()}`;
                     return (
-                      <tr key={entry.id} className="border-t border-slate-200">
+                      <tr key={index} className="border-t border-slate-200">
                         <td className="py-3 px-3 font-semibold text-slate-900">
-                          {entry.id}
+                          {entry.transaction_id}
                         </td>
                         <td className="py-3 px-3">{typeLabel}</td>
                         <td
@@ -858,7 +818,7 @@ const TraderDetailPopup = ({
                         >
                           {directionLabel}
                         </td>
-                        <td className="py-3 px-3">{entry.time}</td>
+                        <td className="py-3 px-3">{entry.created_at}</td>
                         <td
                           className={`py-3 px-3 font-semibold ${amountColor}`}
                         >
@@ -1068,7 +1028,7 @@ const TraderDetailPopup = ({
                             {t("ui.crypto_fee_deposit_label")}
                           </p>
                           <p className="text-base font-semibold text-slate-900">
-                            ${cryptoFeeGeneral.deposit}
+                            ${cryptoFeeGeneral.crypto_deposit_fee}
                           </p>
                         </div>
                         <div>
@@ -1076,7 +1036,7 @@ const TraderDetailPopup = ({
                             {t("ui.crypto_fee_commission_label")}
                           </p>
                           <p className="text-base font-semibold text-slate-900">
-                            ${cryptoFeeGeneral.commission}
+                            ${cryptoFeeGeneral.crypto_withdrawal_fee}
                           </p>
                         </div>
                       </div>
@@ -1339,7 +1299,7 @@ const TraderDetailPopup = ({
           </div>
         </div>
 
-        <EditPositionPopup
+        {/* <EditPositionPopup
           open={isEditPositionOpen}
           onClose={() => setIsEditPositionOpen(false)}
           position={selectedPosition}
@@ -1353,7 +1313,7 @@ const TraderDetailPopup = ({
             setSelectedPosition(updated);
             setIsEditPositionOpen(false);
           }}
-        />
+        /> */}
         <EditOrderPopup
           open={isEditOrderOpen}
           onClose={() => setIsEditOrderOpen(false)}
@@ -1453,7 +1413,7 @@ const TraderDetailPopup = ({
                       <button
                         type="button"
                         className="bg-slate-900 px-3 py-2 text-[10px] font-semibold uppercase tracking-[0.3em] text-white hover:bg-slate-800"
-                        onClick={confirmAdjustment}
+                        // onClick={confirmAdjustment}
                       >
                         {t("actions.confirm")}
                       </button>

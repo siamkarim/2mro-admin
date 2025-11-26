@@ -1,4 +1,4 @@
-'use client';
+"use client";
 
 import { useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
@@ -6,8 +6,8 @@ import { useTranslation } from "react-i18next";
 import ModalBase from "@/components/popups/ModalBase";
 
 export interface CryptoFeeSettings {
-  deposit: string;
-  commission: string;
+  crypto_deposit_fee: number;
+  crypto_withdrawal_fee: number;
 }
 
 interface CryptoFeeSettingsPopupProps {
@@ -39,23 +39,33 @@ const CryptoFeeSettingsPopup = ({
   };
 
   return (
-    <ModalBase open={open} onClose={onClose} title={t("ui.crypto_fee_modal_title")} className="max-w-md">
+    <ModalBase
+      open={open}
+      onClose={onClose}
+      title={t("ui.crypto_fee_modal_title")}
+      className="max-w-md"
+    >
       <div className="space-y-4 text-[12px] text-slate-700">
         <div className="grid gap-3 md:grid-cols-2">
           <label className="text-[10px] font-semibold uppercase tracking-[0.3em] text-slate-500">
             {t("ui.crypto_fee_deposit_label")}
             <input
+              type="number"
               className="mt-1 w-full border border-slate-300 px-2 py-1 text-sm"
-              value={formState.deposit}
-              onChange={(event) => handleChange("deposit", event.target.value)}
+              value={formState.crypto_deposit_fee}
+              onChange={(event) =>
+                handleChange("crypto_deposit_fee", event.target.value)
+              }
             />
           </label>
           <label className="text-[10px] font-semibold uppercase tracking-[0.3em] text-slate-500">
             {t("ui.crypto_fee_commission_label")}
             <input
               className="mt-1 w-full border border-slate-300 px-2 py-1 text-sm"
-              value={formState.commission}
-              onChange={(event) => handleChange("commission", event.target.value)}
+              value={formState.crypto_withdrawal_fee}
+              onChange={(event) =>
+                handleChange("crypto_withdrawal_fee", event.target.value)
+              }
             />
           </label>
         </div>
@@ -81,5 +91,3 @@ const CryptoFeeSettingsPopup = ({
 };
 
 export default CryptoFeeSettingsPopup;
-
-

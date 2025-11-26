@@ -24,6 +24,19 @@ export const getGlobalCrypto = async () => {
   return data;
 };
 
+export const getGlobalCryptoFee = async () => {
+  const { data } = await api.get(apiLink.DEPOSIT + "/crypto-fees");
+  return data;
+};
+
+export const updateGlobalCryptoFee = async (payload: {
+  crypto_deposit_fee: number;
+  crypto_withdrawal_fee: number;
+}) => {
+  const { data } = await api.put(apiLink.DEPOSIT + "/crypto-fees", payload);
+  return data;
+};
+
 export const addGlobalCrypto = async (payload: {
   currency: string;
   wallet_address: string;
