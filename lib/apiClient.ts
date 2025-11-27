@@ -26,8 +26,12 @@ api.interceptors.response.use(
         const refreshRes = await api.post("/auth/refresh", {
           refresh_token: refToken,
         });
-        Cookies.set("accessToken", refreshRes.data.access_token);
-        Cookies.set("refreshToken", refreshRes.data.refresh_token);
+        Cookies.set("accessToken", refreshRes.data.access_token, {
+          expires: 1,
+        });
+        Cookies.set("refreshToken", refreshRes.data.refresh_token, {
+          expires: 7,
+        });
         return api(original);
       } catch (err) {
         Cookies.remove(`Final Error: ${err}`);

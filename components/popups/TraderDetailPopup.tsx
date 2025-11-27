@@ -1145,7 +1145,7 @@ const TraderDetailPopup = ({
                       </p>
                       <p className="mt-1 text-sm font-semibold text-slate-900">
                         {t("ui.current_credit_text")} $
-                        {currentCredit.toLocaleString()}
+                        {/* {currentCredit.toLocaleString()} */}0
                       </p>
                       <label className="mt-2 block text-[10px] font-semibold uppercase tracking-[0.3em] text-slate-500">
                         {t("funding.amount")}
@@ -1181,7 +1181,7 @@ const TraderDetailPopup = ({
                       </p>
                       <p className="mt-1 text-sm font-semibold text-slate-900">
                         {t("ui.current_balance_text")} $
-                        {currentBalance.toLocaleString()}
+                        {/* {currentBalance.toLocaleString()} */}0
                       </p>
                       <label className="mt-2 block text-[10px] font-semibold uppercase tracking-[0.3em] text-slate-500">
                         {t("funding.amount")}
