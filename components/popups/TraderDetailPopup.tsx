@@ -12,9 +12,7 @@ import CryptoFeeSettingsPopup, {
 import CryptoSettingsPopup, {
   CryptoSettings,
 } from "@/components/popups/CryptoSettingsPopup";
-import EditOrderPopup, {
-  OrderPosition,
-} from "@/components/popups/EditOrderPopup";
+
 import EditPositionPopup from "@/components/popups/EditPositionPopup";
 import PaymentWithdrawSettingsPopup from "@/components/popups/PaymentWithdrawSettingsPopup";
 import ModalBase from "@/components/popups/ModalBase";
@@ -22,6 +20,7 @@ import type {
   AdjustmentLog,
   ClosedPosition,
   OpenPosition,
+  OrderPosition,
   TraderAccount,
   TraderAccountType,
   TransectionUser,
@@ -29,6 +28,7 @@ import type {
 import { mockAdjustmentLogs, UserSummary } from "@/mock/data";
 import { getTraderPosition } from "@/lib/api/position";
 import { getUserTransaction } from "@/lib/api/transaction";
+import EditOrderPopup from "./EditOrderPopup";
 
 interface TraderDetailPopupProps {
   open: boolean;
@@ -533,6 +533,7 @@ const TraderDetailPopup = ({
           <button
             type="button"
             className="border border-slate-300 px-3 py-2 text-[11px] font-semibold uppercase tracking-[0.25em] text-slate-600 hover:bg-slate-100"
+            onClick={fetchTraderPosition}
           >
             {t("ui.button_refresh_data_titlecase")}
           </button>
@@ -659,28 +660,30 @@ const TraderDetailPopup = ({
                 <tbody className="text-slate-700">
                   {orderPositions.map((row) => {
                     const directionColor =
-                      row.direction === "Buy"
+                      row.direction === "sell"
                         ? "text-emerald-600"
                         : "text-red-500";
-                    const isSelected = selectedOrder?.id === row.id;
+                    const isSelected = selectedOrder?.pid_no === row.pid_no;
                     return (
                       <tr
-                        key={row.id}
+                        key={row.pid_no}
                         className={`border-t border-slate-200 cursor-pointer transition ${
                           isSelected ? "bg-slate-100" : "hover:bg-slate-50"
                         }`}
                         onClick={() => {
                           setSelectedPosition(null);
                           setSelectedOrder((current) =>
-                            current?.id === row.id ? null : row
+                            current?.pid_no === row.pid_no ? null : row
                           );
                         }}
                       >
                         <td className="py-3 px-3 font-semibold text-slate-900">
-                          {row.orderNo}
+                          {row.pid_no}
                         </td>
                         <td className="py-3 px-3">{row.symbol}</td>
-                        <td className="py-3 px-3">{row.createdAt}</td>
+                        <td className="py-3 px-3">
+                          {new Date(row.created_time).toLocaleString()}
+                        </td>
                         <td className="py-3 px-3">{row.volume}</td>
                         <td
                           className={`py-3 px-3 font-semibold ${directionColor}`}
@@ -691,10 +694,10 @@ const TraderDetailPopup = ({
                               : "ui.option_sell_label"
                           )}
                         </td>
-                        <td className="py-3 px-3">{row.orderPrice}</td>
-                        <td className="py-3 px-3">{row.currentPrice}</td>
-                        <td className="py-3 px-3">{row.stopLoss}</td>
-                        <td className="py-3 px-3">{row.takeProfit}</td>
+                        <td className="py-3 px-3">{row.order_price}</td>
+                        <td className="py-3 px-3">{row.price}</td>
+                        <td className="py-3 px-3">{row.stop_loss}</td>
+                        <td className="py-3 px-3">{row.take_profit}</td>
                       </tr>
                     );
                   })}
@@ -1213,7 +1216,7 @@ const TraderDetailPopup = ({
                     </div>
                   </div>
 
-                  {adjustmentLogs.length ? (
+                  {mockAdjustmentLogs.length ? (
                     <div className="rounded border border-slate-100 bg-slate-50 p-3">
                       <p className="text-[10px] font-semibold uppercase tracking-[0.3em] text-slate-500">
                         {t("ui.adjustment_logs_heading")}
@@ -1241,7 +1244,7 @@ const TraderDetailPopup = ({
                             </tr>
                           </thead>
                           <tbody className="text-slate-700">
-                            {adjustmentLogs.map((log) => (
+                            {mockAdjustmentLogs.map((log) => (
                               <tr
                                 key={log.id}
                                 className="border-t border-slate-100 text-[11px] normal-case"
@@ -1319,9 +1322,6 @@ const TraderDetailPopup = ({
           onClose={() => setIsEditOrderOpen(false)}
           order={selectedOrder}
           onSave={(updated) => {
-            setOrderPositions((prev) =>
-              prev.map((entry) => (entry.id === updated.id ? updated : entry))
-            );
             setSelectedOrder(updated);
             setIsEditOrderOpen(false);
           }}
@@ -1357,7 +1357,8 @@ const TraderDetailPopup = ({
           title="Confirm Adjustment"
           className="max-w-md"
         >
-          {pendingAdjustment ? (
+          test
+          {/* {pendingAdjustment ? (
             <div className="space-y-3 text-sm text-slate-700">
               {(() => {
                 const delta =
@@ -1422,7 +1423,7 @@ const TraderDetailPopup = ({
                 );
               })()}
             </div>
-          ) : null}
+          ) : null} */}
         </ModalBase>
       </div>
     </ModalBase>

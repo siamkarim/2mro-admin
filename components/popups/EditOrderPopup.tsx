@@ -1,22 +1,10 @@
-'use client';
+"use client";
 
 import { useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
 
 import ModalBase from "@/components/popups/ModalBase";
-
-export interface OrderPosition {
-  id: string;
-  orderNo: string;
-  symbol: string;
-  createdAt: string;
-  volume: string;
-  direction: string;
-  orderPrice: string;
-  currentPrice: string;
-  stopLoss: string;
-  takeProfit: string;
-}
+import { OrderPosition } from "@/mock/data";
 
 interface EditOrderPopupProps {
   open: boolean;
@@ -25,7 +13,12 @@ interface EditOrderPopupProps {
   onSave: (order: OrderPosition) => void;
 }
 
-const EditOrderPopup = ({ open, onClose, order, onSave }: EditOrderPopupProps) => {
+const EditOrderPopup = ({
+  open,
+  onClose,
+  order,
+  onSave,
+}: EditOrderPopupProps) => {
   const { t } = useTranslation();
   const [formState, setFormState] = useState<OrderPosition | null>(order);
 
@@ -35,8 +28,15 @@ const EditOrderPopup = ({ open, onClose, order, onSave }: EditOrderPopupProps) =
 
   if (!order || !formState) {
     return (
-      <ModalBase open={open} onClose={onClose} title={t("ui.edit_order_modal_title")} className="max-w-3xl">
-        <p className="text-sm text-slate-500">{t("ui.edit_order_empty_state")}</p>
+      <ModalBase
+        open={open}
+        onClose={onClose}
+        title={t("ui.edit_order_modal_title")}
+        className="max-w-3xl"
+      >
+        <p className="text-sm text-slate-500">
+          {t("ui.edit_order_empty_state")}
+        </p>
       </ModalBase>
     );
   }
@@ -53,7 +53,12 @@ const EditOrderPopup = ({ open, onClose, order, onSave }: EditOrderPopupProps) =
   const symbolOptions = ["EURUSD", "XAUUSD", "GBPUSD", "USDJPY", "USOIL"];
 
   return (
-    <ModalBase open={open} onClose={onClose} title={t("ui.edit_order_modal_title")} className="max-w-3xl">
+    <ModalBase
+      open={open}
+      onClose={onClose}
+      title={t("ui.edit_order_modal_title")}
+      className="max-w-3xl"
+    >
       <div className="space-y-4 text-xs text-slate-700 md:text-sm">
         <div className="grid gap-3 md:grid-cols-2">
           <label className="text-[11px] font-semibold uppercase tracking-[0.2em] text-slate-500">
@@ -62,7 +67,7 @@ const EditOrderPopup = ({ open, onClose, order, onSave }: EditOrderPopupProps) =
               className="pointer-events-none select-none mt-1 w-full border border-slate-300 bg-slate-50 px-2 py-1 text-sm text-slate-700"
               aria-readonly="true"
             >
-              {formState.orderNo}
+              {formState.pid_no}
             </div>
           </label>
           <label className="text-[11px] font-semibold uppercase tracking-[0.2em] text-slate-500">
@@ -83,8 +88,10 @@ const EditOrderPopup = ({ open, onClose, order, onSave }: EditOrderPopupProps) =
             {t("ui.label_created_time")}
             <input
               className="mt-1 w-full border border-slate-300 px-2 py-1 text-sm"
-              value={formState.createdAt}
-              onChange={(event) => handleChange("createdAt", event.target.value)}
+              value={formState.created_time}
+              onChange={(event) =>
+                handleChange("created_time", event.target.value)
+              }
             />
           </label>
           <label className="text-[11px] font-semibold uppercase tracking-[0.2em] text-slate-500">
@@ -99,15 +106,27 @@ const EditOrderPopup = ({ open, onClose, order, onSave }: EditOrderPopupProps) =
             {t("dashboard.table.direction")}
             <select
               className={`mt-1 w-full border border-slate-300 px-2 py-1 text-sm font-semibold ${
-                formState.direction === "Buy" ? "text-emerald-600" : "text-red-500"
+                formState.direction === "buy"
+                  ? "text-emerald-600"
+                  : "text-red-500"
               }`}
               value={formState.direction}
-              onChange={(event) => handleChange("direction", event.target.value)}
+              onChange={(event) =>
+                handleChange("direction", event.target.value)
+              }
             >
-              <option value="Buy" className="text-emerald-600" style={{ color: "#059669" }}>
+              <option
+                value="buy"
+                className="text-emerald-600"
+                style={{ color: "#059669" }}
+              >
                 {t("ui.option_buy_label")}
               </option>
-              <option value="Sell" className="text-red-500" style={{ color: "#dc2626" }}>
+              <option
+                value="sell"
+                className="text-red-500"
+                style={{ color: "#dc2626" }}
+              >
                 {t("ui.option_sell_label")}
               </option>
             </select>
@@ -116,32 +135,38 @@ const EditOrderPopup = ({ open, onClose, order, onSave }: EditOrderPopupProps) =
             {t("ui.label_order_price")}
             <input
               className="mt-1 w-full border border-slate-300 px-2 py-1 text-sm"
-              value={formState.orderPrice}
-              onChange={(event) => handleChange("orderPrice", event.target.value)}
+              value={formState.order_price}
+              onChange={(event) =>
+                handleChange("order_price", event.target.value)
+              }
             />
           </label>
           <label className="text-[11px] font-semibold uppercase tracking-[0.2em] text-slate-500">
             {t("ui.label_current_price")}
             <input
               className="mt-1 w-full border border-slate-300 px-2 py-1 text-sm"
-              value={formState.currentPrice}
-              onChange={(event) => handleChange("currentPrice", event.target.value)}
+              value={formState.price}
+              onChange={(event) => handleChange("price", event.target.value)}
             />
           </label>
           <label className="text-[11px] font-semibold uppercase tracking-[0.2em] text-slate-500">
             {t("ui.label_stop_loss")}
             <input
               className="mt-1 w-full border border-slate-300 px-2 py-1 text-sm"
-              value={formState.stopLoss}
-              onChange={(event) => handleChange("stopLoss", event.target.value)}
+              value={formState.stop_loss}
+              onChange={(event) =>
+                handleChange("stop_loss", event.target.value)
+              }
             />
           </label>
           <label className="text-[11px] font-semibold uppercase tracking-[0.2em] text-slate-500">
             {t("ui.label_take_profit")}
             <input
               className="mt-1 w-full border border-slate-300 px-2 py-1 text-sm"
-              value={formState.takeProfit}
-              onChange={(event) => handleChange("takeProfit", event.target.value)}
+              value={formState.take_profit}
+              onChange={(event) =>
+                handleChange("take_profit", event.target.value)
+              }
             />
           </label>
         </div>
@@ -168,5 +193,3 @@ const EditOrderPopup = ({ open, onClose, order, onSave }: EditOrderPopupProps) =
 };
 
 export default EditOrderPopup;
-
-
